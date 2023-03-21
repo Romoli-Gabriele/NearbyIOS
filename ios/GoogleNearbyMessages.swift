@@ -248,23 +248,15 @@ class NearbyMessages: RCTEventEmitter {
     // Avvia il thread in background
     DispatchQueue.global(qos: .default).async {
         // Esegui qui il tuo codice in background
-        var send = true
-        var count = 0
-        while send {
-          print("send")
-          self.publish("Background Message") { (result: Any?) in
+      for _ in 0..<20 {
+          self.publish("Gabbo") { (result: Any?) in
               // Code to handle the resolved result
-            print("Successo");
+            print("<+>-Successo-<+>");
           } rejecter: { (errorCode: String?, errorMessage: String?, error: Error?) in
               // Code to handle the rejected error
-            print(errorMessage);
+            print(errorMessage ?? "Errore");
           }
-;
-            Thread.sleep(forTimeInterval: 5.0)
-            count += 1
-            if count == 10 {
-                send = false
-            }
+          Thread.sleep(forTimeInterval: 60);
         }
 
         // Termina il task in background quando l'operazione è completata

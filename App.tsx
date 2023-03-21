@@ -55,7 +55,7 @@ function App(): JSX.Element {
     disconnect();
   }
   async function onSend() {
-    publish('GAbbo');
+    publish('Gabbo');
   }
   async function onBack() {
     startBackground();
