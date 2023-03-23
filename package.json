@@ -12,6 +12,7 @@
   "dependencies": {
     "react": "18.2.0",
     "react-native": "0.71.4",
+    "react-native-device-info": "^10.4.0",
     "react-native-permissions": "^3.7.3"
   },
   "devDependencies": {
@@ -34,10 +35,10 @@
   "jest": {
     "preset": "react-native"
   },
-    "reactNativePermissionsIOS": [
-      "AppTrackingTransparency",
-      "BluetoothPeripheral",
-      "Microphone",
-      "Notifications"
-    ]
+  "reactNativePermissionsIOS": [
+    "AppTrackingTransparency",
+    "BluetoothPeripheral",
+    "Microphone",
+    "Notifications"
+  ]
 }

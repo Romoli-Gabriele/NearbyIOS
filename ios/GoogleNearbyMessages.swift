@@ -17,6 +17,8 @@ class NearbyMessages: RCTEventEmitter {
   enum EventType: String, CaseIterable {
     case MESSAGE_FOUND
     case MESSAGE_LOST
+    case onActivityStart
+    case onActivityStop
     case BLUETOOTH_ERROR
     case PERMISSION_ERROR
     case MESSAGE_NO_DATA_ERROR
@@ -145,6 +147,7 @@ class NearbyMessages: RCTEventEmitter {
           params.discoveryMode = self.discoveryModes ?? defaultDiscoveryModes
           })
         })
+      self.sendEvent(withName: EventType.onActivityStart.rawValue, body: [ "Start" ]);
       resolve(nil)
     } catch {
       reject("GOOGLE_NEARBY_MESSAGES_ERROR_SUBSCRIBE", error.localizedDescription, error)
@@ -261,6 +264,7 @@ class NearbyMessages: RCTEventEmitter {
 
         // Termina il task in background quando l'operazione è completata
         UIApplication.shared.endBackgroundTask(backgroundTaskIdentifier)
+        self.sendEvent(withName: EventType.onActivityStop.rawValue, body: [ "Stop" ]);
         backgroundTaskIdentifier = .invalid
     }
   }
