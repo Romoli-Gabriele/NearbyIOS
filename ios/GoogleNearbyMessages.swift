@@ -8,9 +8,12 @@
 import Foundation
 import CoreBluetooth
 import BackgroundTasks
+import UserNotifications
 
 let defaultDiscoveryModes: GNSDiscoveryMode = [.broadcast, .scan]
 let defaultDiscoveryMediums: GNSDiscoveryMediums = .BLE
+var backgroundTaskIdentifier: UIBackgroundTaskIdentifier = .invalid
+var shouldStop = false;
 
 @objc(NearbyMessages)
 class NearbyMessages: RCTEventEmitter {
@@ -26,7 +29,7 @@ class NearbyMessages: RCTEventEmitter {
   enum GoogleNearbyMessagesError: Error, LocalizedError {
     case permissionError(permissionName: String)
     case runtimeError(message: String)
-
+    
     public var errorDescription: String? {
       switch self {
       case .permissionError(permissionName: let permissionName):
@@ -36,9 +39,9 @@ class NearbyMessages: RCTEventEmitter {
       }
     }
   }
-
-
-  public var messageManager: GNSMessageManager? = nil
+  
+  
+  private var messageManager: GNSMessageManager? = nil
   private var currentPublication: GNSPublication? = nil
   private var currentSubscription: GNSSubscription? = nil
   private var discoveryModes: GNSDiscoveryMode? = nil
@@ -47,45 +50,48 @@ class NearbyMessages: RCTEventEmitter {
   private var tempBluetoothManager: CBCentralManager? = nil
   private var tempBluetoothManagerDelegate: CBCentralManagerDelegate? = nil
   private var didCallback = false
-
+  
   @objc(connect:discoveryModes:discoveryMediums:resolver:rejecter:)
   func connect(_ apiKey: String, discoveryModes: Array<NSString>, discoveryMediums: Array<NSString>, resolver resolve: RCTPromiseResolveBlock, rejecter reject: RCTPromiseRejectBlock) -> Void {
+    
     print("GNM_BLE: Connecting...")
     GNSMessageManager.setDebugLoggingEnabled(true)
     GNSMessageManager.setDebugLoggingEnabled(true)
     self.discoveryMediums = parseDiscoveryMediums(discoveryMediums)
     self.discoveryModes = parseDiscoveryModes(discoveryModes)
     self.messageManager = GNSMessageManager(apiKey: apiKey,
-                        paramsBlock: { (params: GNSMessageManagerParams?) in
-                          guard let params = params else { return }
-                          params.microphonePermissionErrorHandler = { (hasError: Bool) in
-                            if (hasError) {
-                              self.sendEvent(withName: EventType.PERMISSION_ERROR.rawValue, body: [ "message": "Microphone Permission denied!" ])
-                            }
-                          }
-                          params.bluetoothPowerErrorHandler = { (hasError: Bool) in
-                            if (hasError) {
-                              self.sendEvent(withName: EventType.BLUETOOTH_ERROR.rawValue, body: [ "message": "Bluetooth is powered off/unavailable!" ])
-                            }
-                          }
-                          params.bluetoothPermissionErrorHandler = { (hasError: Bool) in
-                            if (hasError) {
-                              self.sendEvent(withName: EventType.PERMISSION_ERROR.rawValue, body: [ "message": "Bluetooth Permission denied!" ])
-                            }
-                          }
+                                            paramsBlock: { (params: GNSMessageManagerParams?) in
+      guard let params = params else { return }
+      params.microphonePermissionErrorHandler = { (hasError: Bool) in
+        if (hasError) {
+          self.sendEvent(withName: EventType.PERMISSION_ERROR.rawValue, body: [ "message": "Microphone Permission denied!" ])
+        }
+      }
+      params.bluetoothPowerErrorHandler = { (hasError: Bool) in
+        if (hasError) {
+          self.sendEvent(withName: EventType.BLUETOOTH_ERROR.rawValue, body: [ "message": "Bluetooth is powered off/unavailable!" ])
+        }
+      }
+      params.bluetoothPermissionErrorHandler = { (hasError: Bool) in
+        if (hasError) {
+          self.sendEvent(withName: EventType.PERMISSION_ERROR.rawValue, body: [ "message": "Bluetooth Permission denied!" ])
+        }
+      }
     })
     resolve(nil)
   }
-
+  
   @objc
   func disconnect() -> Void {
     print("GNM_BLE: Disconnecting...")
     // TODO: is setting nil enough garbage collection? no need for CFRetain, CFRelease, or CFAutorelease?
+    shouldStop = true;
     self.currentSubscription = nil
     self.currentPublication = nil
     self.messageManager = nil
+    self.sendEvent(withName: EventType.onActivityStop.rawValue, body: [ "message":"Stop" ]);
   }
-
+  
   @objc(publish:resolver:rejecter:)
   func publish(_ message: String, resolver resolve: RCTPromiseResolveBlock, rejecter reject: RCTPromiseRejectBlock) -> Void {
     print("GNM_BLE: Publishing...")
@@ -94,27 +100,27 @@ class NearbyMessages: RCTEventEmitter {
         throw GoogleNearbyMessagesError.runtimeError(message: "Google Nearby Messages is not connected! Call connect() before any other calls.")
       }
       self.currentPublication = self.messageManager!.publication(with: GNSMessage(content: message.data(using: .utf8)),
-        paramsBlock: { (params: GNSPublicationParams?) in
+                                                                 paramsBlock: { (params: GNSPublicationParams?) in
+        guard let params = params else { return }
+        params.strategy = GNSStrategy(paramsBlock: { (params: GNSStrategyParams?) in
           guard let params = params else { return }
-          params.strategy = GNSStrategy(paramsBlock: { (params: GNSStrategyParams?) in
-            guard let params = params else { return }
-            params.discoveryMediums = self.discoveryMediums ?? defaultDiscoveryMediums
-            params.discoveryMode = self.discoveryModes ?? defaultDiscoveryModes
-          })
+          params.discoveryMediums = self.discoveryMediums ?? defaultDiscoveryMediums
+          params.discoveryMode = self.discoveryModes ?? defaultDiscoveryModes
+        })
       })
       resolve(nil)
     } catch {
       reject("GOOGLE_NEARBY_MESSAGES_ERROR_PUBLISH", error.localizedDescription, error)
     }
   }
-
+  
   /*@objc(subscribe:rejecter:)
-  func unpublish(_ resolve: RCTPromiseResolveBlock, rejecter reject: RCTPromiseRejectBlock) -> Void {
-    print("GNM_BLE: Unpublishing...")
-    self.currentPublication = nil
-    resolve(nil)
-  }*/
-
+   func unpublish(_ resolve: RCTPromiseResolveBlock, rejecter reject: RCTPromiseRejectBlock) -> Void {
+   print("GNM_BLE: Unpublishing...")
+   self.currentPublication = nil
+   resolve(nil)
+   }*/
+  
   @objc(subscribe:rejecter:)
   func subscribe(_ resolve: RCTPromiseResolveBlock, rejecter reject: RCTPromiseRejectBlock) -> Void {
     print("GNM_BLE: Subscribing...")
@@ -142,9 +148,9 @@ class NearbyMessages: RCTEventEmitter {
         paramsBlock: { (params: GNSSubscriptionParams?) in
           guard let params = params else { return }
           params.strategy = GNSStrategy(paramsBlock: { (params: GNSStrategyParams?) in
-          guard let params = params else { return }
-          params.discoveryMediums = self.discoveryMediums ?? defaultDiscoveryMediums
-          params.discoveryMode = self.discoveryModes ?? defaultDiscoveryModes
+            guard let params = params else { return }
+            params.discoveryMediums = self.discoveryMediums ?? defaultDiscoveryMediums
+            params.discoveryMode = self.discoveryModes ?? defaultDiscoveryModes
           })
         })
       self.sendEvent(withName: EventType.onActivityStart.rawValue, body: [ "Start" ]);
@@ -153,20 +159,20 @@ class NearbyMessages: RCTEventEmitter {
       reject("GOOGLE_NEARBY_MESSAGES_ERROR_SUBSCRIBE", error.localizedDescription, error)
     }
   }
-
+  
   @objc
   func unsubscribe() -> Void {
     print("GNM_BLE: Unsubscribing...")
     self.currentSubscription = nil
   }
-
+  
   @objc(checkBluetoothPermission:rejecter:)
   func checkBluetoothPermission(_ resolve: RCTPromiseResolveBlock, rejecter reject: RCTPromiseRejectBlock) -> Void {
     print("GNM_BLE: Checking Bluetooth Permissions...")
     let hasBluetoothPermission = self.hasBluetoothPermission()
     resolve(hasBluetoothPermission)
   }
-
+  
   @objc(checkBluetoothAvailability:rejecter:)
   func checkBluetoothAvailability(_ resolve: @escaping RCTPromiseResolveBlock, rejecter reject: @escaping RCTPromiseRejectBlock) -> Void {
     if (self.tempBluetoothManager != nil || self.tempBluetoothManagerDelegate != nil) {
@@ -182,7 +188,7 @@ class NearbyMessages: RCTEventEmitter {
         self.promiseResolver = resolver
         self.parentReference = parentReference
       }
-
+      
       func centralManagerDidUpdateState(_ central: CBCentralManager) {
         guard let parent = parentReference else {
           return
@@ -198,7 +204,7 @@ class NearbyMessages: RCTEventEmitter {
     }
     tempBluetoothManagerDelegate = BluetoothManagerDelegate(resolver: resolve, parentReference: self)
     tempBluetoothManager = CBCentralManager(delegate: tempBluetoothManagerDelegate, queue: nil)
-
+    
     DispatchQueue.main.asyncAfter(deadline: .now() + .seconds(10)) {
       if (!self.didCallback) {
         self.didCallback = true
@@ -209,7 +215,7 @@ class NearbyMessages: RCTEventEmitter {
       }
     }
   }
-
+  
   func hasBluetoothPermission() -> Bool {
     if #available(iOS 13.1, *) {
       return CBCentralManager.authorization == .allowedAlways
@@ -225,50 +231,59 @@ class NearbyMessages: RCTEventEmitter {
       return event.rawValue
     }
   }
-
+  
   @objc
   override static func requiresMainQueueSetup() -> Bool {
     // init on main thread, audio doesn't work on background thread.
     return true
   }
-
+  
   // Called when the UIView gets destroyed (e.g. App reload)
   @objc
   override func invalidate() {
     print("GNM_BLE: invalidate")
     disconnect()
   }
+  @available(iOS 13.0.0, *)
   @objc
   func backgroundHandler(){
-    var backgroundTaskIdentifier: UIBackgroundTaskIdentifier = .invalid
-
-    backgroundTaskIdentifier = UIApplication.shared.beginBackgroundTask(withName: "MyBackgroundTask", expirationHandler: {
-        // Termina il task in background quando scade il tempo di esecuzione
-        UIApplication.shared.endBackgroundTask(backgroundTaskIdentifier)
-        backgroundTaskIdentifier = .invalid
-    })
-
-    // Avvia il thread in background
-    DispatchQueue.global(qos: .default).async {
-        // Esegui qui il tuo codice in background
-      for _ in 0..<20 {
-          self.publish("Gabbo") { (result: Any?) in
-              // Code to handle the resolved result
-            print("<+>-Successo-<+>");
-          } rejecter: { (errorCode: String?, errorMessage: String?, error: Error?) in
-              // Code to handle the rejected error
-            print(errorMessage ?? "Errore");
-          }
-          Thread.sleep(forTimeInterval: 60);
-        }
-
-        // Termina il task in background quando l'operazione è completata
-        UIApplication.shared.endBackgroundTask(backgroundTaskIdentifier)
-        self.sendEvent(withName: EventType.onActivityStop.rawValue, body: [ "Stop" ]);
-        backgroundTaskIdentifier = .invalid
+    let notificationCenter = UNUserNotificationCenter.current();
+    notificationCenter.requestAuthorization(options: [.badge, .alert, .sound]) {
+      (granted, error) in
+      if(error == nil)
+      {
+        print("Accettate notifiche: \(granted)")
+      }
     }
+    notificationCenter.removeAllPendingNotificationRequests();
+    shouldStop = false;
+     backgroundTaskIdentifier = UIApplication.shared.beginBackgroundTask(withName: "MyBackgroundTask", expirationHandler: {
+     self.sendEvent(withName: EventType.onActivityStop.rawValue, body: [ "Stop" ]);
+       self.SendNotification();
+     UIApplication.shared.endBackgroundTask(backgroundTaskIdentifier)
+     backgroundTaskIdentifier = .invalid
+     })
+     var messages = 0;
+     // Avvia il thread in background
+     DispatchQueue.global(qos: .default).async {
+     while  messages < 50 && !shouldStop {
+     self.publish("Gabbo") { (result: Any?) in
+     } rejecter: { (errorCode: String?, errorMessage: String?, error: Error?) in
+     print(errorMessage ?? "Errore");
+     }
+     messages += 1;
+     Thread.sleep(forTimeInterval: 60);
+     }
+     
+    
+     // Termina il task in background quando l'operazione è completata
+     UIApplication.shared.endBackgroundTask(backgroundTaskIdentifier)
+     self.SendNotification();
+     self.sendEvent(withName: EventType.onActivityStop.rawValue, body: [ "Stop" ]);
+     backgroundTaskIdentifier = .invalid
+     }
   }
-
+  
   func parseDiscoveryMediums(_ discoveryMediums: Array<NSString>) -> GNSDiscoveryMediums {
     var mediums = GNSDiscoveryMediums()
     for medium in discoveryMediums {
@@ -286,8 +301,8 @@ class NearbyMessages: RCTEventEmitter {
     }
     return mediums.isEmpty ? defaultDiscoveryMediums : mediums
   }
-
-
+  
+  
   func parseDiscoveryModes(_ discoveryModes: Array<NSString>) -> GNSDiscoveryMode {
     var modes = GNSDiscoveryMode()
     for mode in discoveryModes {
@@ -304,5 +319,40 @@ class NearbyMessages: RCTEventEmitter {
       }
     }
     return modes.isEmpty ? defaultDiscoveryModes : modes
+  }
+  
+  func SendNotification(){
+    let notificationCenter = UNUserNotificationCenter.current();
+    let uuidString = UUID().uuidString
+    let content = UNMutableNotificationContent();
+    content.title = "Attenzione";
+    content.body = "Non sei più visibile agli altri utenti";
+    content.sound = UNNotificationSound.default;
+    if #available(iOS 15.0, *) {
+      content.interruptionLevel = UNNotificationInterruptionLevel.critical
+    }
+    let trigger = UNTimeIntervalNotificationTrigger(timeInterval: (15), repeats: false);
+    let request = UNNotificationRequest(identifier: uuidString, content: content, trigger: trigger);
+    notificationCenter.add(request){ error in
+      if let error = error {
+          print("Errore nell'aggiunta della notifica: \(error)")
+      } else {
+          print("Notifica aggiunta con successo")
+      }
+    }
+    /*notificationCenter.getPendingNotificationRequests { notificationRequests in
+     for request in notificationRequests {
+       print(request.content)
+     }
+   }
+   notificationCenter.getNotificationSettings { settings in
+       print("Authorization status: \(settings.authorizationStatus)")
+       print("Notification sound: \(settings.soundSetting)")
+       print("Notification badge: \(settings.badgeSetting)")
+       print("Notification alert: \(settings.alertSetting)")
+   }
+   notificationCenter.getDeliveredNotifications(){ notifica in
+     print(notifica);
+   }*/
   }
 }

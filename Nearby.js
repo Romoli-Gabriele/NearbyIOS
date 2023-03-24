@@ -27,6 +27,9 @@ const start = message => {
  */
 const stop = () => {
   if (isAndroid) NativeModules.MyNativeModule.stop();
+  else if(isIos) {
+    NativeModules.GoogleNearbyMessages.disconnect();
+  }
 };
 
 /**
