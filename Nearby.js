@@ -28,7 +28,8 @@ const start = message => {
 const stop = () => {
   if (isAndroid) NativeModules.MyNativeModule.stop();
   else if(isIos) {
-    NativeModules.GoogleNearbyMessages.disconnect();
+    NativeModules.GoogleNearbyMessages.stop();
+    console.log("Disconnetti");
   }
 };
 
@@ -94,9 +95,9 @@ const init = () => {
       const discoveryModes = ['broadcast', 'scan'];
       const discoveryMediums = ['ble'];
       try {
-        resolve(true)
         NativeModules.GoogleNearbyMessages.connect(apiKey, discoveryModes, discoveryMediums);
         NativeModules.GoogleNearbyMessages.subscribe();
+        resolve(true)
       } catch (error) {
         resolve(false);
       }
