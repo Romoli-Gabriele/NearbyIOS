@@ -403,8 +403,8 @@ func backgroundHandler(){
     })
     print("Task1")
     var messages = 0;
-    while  messages < 50 && !shouldStop {
-      if(messages%20 == 0){
+    while  messages < 100 && !shouldStop {
+      if(messages%30 == 0){
         self.publish("Gabbo") { (result: Any?) in
         } rejecter: { (errorCode: String?, errorMessage: String?, error: Error?) in
           print(errorMessage ?? "Errore");
@@ -412,12 +412,12 @@ func backgroundHandler(){
       }
       messages += 1;
       print("Task 1 message: ", messages);
-      sleep(8);
+      sleep(5);
     }
     
     //self.task2()
     UIApplication.shared.endBackgroundTask(backgroundTaskIdentifier)
-     //self.SendNotification();
+     self.SendNotification();
      //self.sendEvent(withName: EventType.onActivityStop.rawValue, body: [ "Stop" ]);
      backgroundTaskIdentifier = .invalid
   }
