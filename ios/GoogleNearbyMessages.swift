@@ -278,8 +278,7 @@ class NearbyMessages: RCTEventEmitter {
   @available(iOS 13.0.0, *)
   @objc
 func backgroundHandler(){
-    self.task1();
-  /*let notificationCenter = UNUserNotificationCenter.current();
+  let notificationCenter = UNUserNotificationCenter.current();
   notificationCenter.requestAuthorization(options: [.badge, .alert, .sound]) {
     (granted, error) in
     if(error == nil)
@@ -287,6 +286,8 @@ func backgroundHandler(){
       print("Accettate notifiche: \(granted)")
     }
   }
+    self.task1();
+  /*let
   notificationCenter.removeAllPendingNotificationRequests();
   shouldStop = false;
   backgroundTaskIdentifier = UIApplication.shared.beginBackgroundTask(withName: "MyBackgroundTask", expirationHandler: {
