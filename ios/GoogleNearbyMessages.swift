@@ -97,29 +97,27 @@ class NearbyMessages: RCTEventEmitter {
   func publish(_ message: String, resolver resolve: RCTPromiseResolveBlock, rejecter reject: RCTPromiseRejectBlock) -> Void {
       print("GNM_BLE: Publishing...")
     //Rimuovo messaggi precedenti
-    self.unpublish{ (result: Any?) in
-    } rejecter: { (errorCode: String?, errorMessage: String?, error: Error?) in
-      print(errorMessage ?? "Errore");
-    }
-
+    //self.unpublish{ (result: Any?) in
+    //} rejecter: { (errorCode: String?, errorMessage: String?, error: Error?) in
+    //  print(errorMessage ?? "Errore");
+    //}
       // lavoro task pubblicazione
-      do {
-          if (self.messageManager == nil) {
-              throw GoogleNearbyMessagesError.runtimeError(message: "Google Nearby Messages is not connected! Call connect() before any other calls.")
-          }
+    do {
+      if (self.messageManager == nil) {
+        throw GoogleNearbyMessagesError.runtimeError(message: "Google Nearby Messages is not connected! Call connect() before any other calls.")
+      }
         self.currentPublication = self.messageManager!.publication(with: GNSMessage(content: message.data(using: .utf8)), paramsBlock: { (params: GNSPublicationParams?) in
-              guard let params = params else { return }
-              params.strategy = GNSStrategy(paramsBlock: { (params: GNSStrategyParams?) in
-                  guard let params = params else { return }
-                  params.allowInBackground = true
-                  params.discoveryMediums = .BLE
-                  //params.discoveryMode = self.discoveryModes ?? defaultDiscoveryModes
-              })
+          guard let params = params else { return }
+          params.strategy = GNSStrategy(paramsBlock: { (params: GNSStrategyParams?) in
+            guard let params = params else { return }
+            params.allowInBackground = true
+            params.discoveryMediums = .BLE
+            //params.discoveryMode = self.discoveryModes ?? defaultDiscoveryModes
           })
-          
-          resolve(nil)
+        })
+        resolve(nil)
       } catch {
-          reject("GOOGLE_NEARBY_MESSAGES_ERROR_PUBLISH", error.localizedDescription, error)
+        reject("GOOGLE_NEARBY_MESSAGES_ERROR_PUBLISH", error.localizedDescription, error)
       }
   }
 
@@ -280,9 +278,7 @@ class NearbyMessages: RCTEventEmitter {
   @available(iOS 13.0.0, *)
   @objc
 func backgroundHandler(){
-  DispatchQueue.global(qos: .default).async {
     self.task1();
-  }
   /*let notificationCenter = UNUserNotificationCenter.current();
   notificationCenter.requestAuthorization(options: [.badge, .alert, .sound]) {
     (granted, error) in
@@ -405,14 +401,16 @@ func backgroundHandler(){
     var messages = 0;
     while  messages < 100 && !shouldStop {
       if(messages%30 == 0){
-        self.publish("Gabbo") { (result: Any?) in
-        } rejecter: { (errorCode: String?, errorMessage: String?, error: Error?) in
-          print(errorMessage ?? "Errore");
+        DispatchQueue.main.async{
+          self.publish("Gabbo") { (result: Any?) in
+          } rejecter: { (errorCode: String?, errorMessage: String?, error: Error?) in
+            print(errorMessage ?? "Errore");
+          }
         }
       }
       messages += 1;
       print("Task 1 message: ", messages);
-      sleep(5);
+      sleep(4);
     }
     
     //self.task2()
