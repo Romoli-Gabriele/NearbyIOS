@@ -353,13 +353,13 @@ func backgroundHandler(){
     }
     return modes.isEmpty ? defaultDiscoveryModes : modes
   }
-  
-  func SendNotification(){
+  @objc
+  func SendNotification(message:String){
     let notificationCenter = UNUserNotificationCenter.current();
     let uuidString = UUID().uuidString
     let content = UNMutableNotificationContent();
     content.title = "Attenzione";
-    content.body = "Non sei più visibile agli altri utenti";
+    content.body = message;
     content.sound = UNNotificationSound.default;
     if #available(iOS 15.0, *) {
       content.interruptionLevel = UNNotificationInterruptionLevel.critical
@@ -392,16 +392,17 @@ func backgroundHandler(){
     shouldStop = false;
     backgroundTaskIdentifier = UIApplication.shared.beginBackgroundTask(withName: "Task1", expirationHandler: {
       //self.sendEvent(withName: EventType.onActivityStop.rawValue, body: [ "Stop" ]);
-      self.SendNotification();
+      self.SendNotification(message: "Potresti non essere più visibile agli altri utenti");
       //self.task2()
-      print("Task 1 terminato dal sistema");
+      UIApplication.shared.beginBackgroundTask(withName: "Task2", expirationHandler: {})
       UIApplication.shared.endBackgroundTask(backgroundTaskIdentifier)
       backgroundTaskIdentifier = .invalid
+      print("Task 1 terminato dal sistema");
     })
     print("Task1")
     var messages = 0;
     while  messages < 100 && !shouldStop {
-      if(messages%30 == 0){
+      if(messages%40 == 0){
         DispatchQueue.main.async{
           self.publish("Gabbo") { (result: Any?) in
           } rejecter: { (errorCode: String?, errorMessage: String?, error: Error?) in
@@ -416,8 +417,8 @@ func backgroundHandler(){
     
     //self.task2()
     UIApplication.shared.endBackgroundTask(backgroundTaskIdentifier)
-     self.SendNotification();
-     //self.sendEvent(withName: EventType.onActivityStop.rawValue, body: [ "Stop" ]);
+    self.SendNotification(message: "Non sei più visibile agli altri utenti");
+     self.sendEvent(withName: EventType.onActivityStop.rawValue, body: [ "Stop" ]);
      backgroundTaskIdentifier = .invalid
   }
   
