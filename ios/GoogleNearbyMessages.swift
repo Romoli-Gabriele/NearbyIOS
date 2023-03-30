@@ -362,7 +362,9 @@ func backgroundHandler(){
     let content = UNMutableNotificationContent();
     content.title = "Attenzione";
     content.body = message;
-    content.sound = UNNotificationSound.default;
+    if(message == "Non sei più visibile agli altri utenti"){
+      content.sound = UNNotificationSound.default;
+    }
     if #available(iOS 15.0, *) {
       content.interruptionLevel = UNNotificationInterruptionLevel.critical
     }
