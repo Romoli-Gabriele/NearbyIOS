@@ -97,10 +97,12 @@ class NearbyMessages: RCTEventEmitter {
   func publish(_ message: String, resolver resolve: RCTPromiseResolveBlock, rejecter reject: RCTPromiseRejectBlock) -> Void {
       print("GNM_BLE: Publishing...")
     //Rimuovo messaggi precedenti
-    //self.unpublish{ (result: Any?) in
-    //} rejecter: { (errorCode: String?, errorMessage: String?, error: Error?) in
-    //  print(errorMessage ?? "Errore");
-    //}
+    if(self.currentPublication != nil){
+      self.unpublish{ (result: Any?) in
+      } rejecter: { (errorCode: String?, errorMessage: String?, error: Error?) in
+        print(errorMessage ?? "Errore");
+      }
+    }
       // lavoro task pubblicazione
     do {
       if (self.messageManager == nil) {
@@ -373,85 +375,36 @@ func backgroundHandler(){
           print("Notifica aggiunta con successo")
       }
     }
-    /*notificationCenter.getPendingNotificationRequests { notificationRequests in
-     for request in notificationRequests {
-       print(request.content)
-     }
-   }
-   notificationCenter.getNotificationSettings { settings in
-       print("Authorization status: \(settings.authorizationStatus)")
-       print("Notification sound: \(settings.soundSetting)")
-       print("Notification badge: \(settings.badgeSetting)")
-       print("Notification alert: \(settings.alertSetting)")
-   }
-   notificationCenter.getDeliveredNotifications(){ notifica in
-     print(notifica);
-   }*/
   }
   func task1(){
     shouldStop = false;
     backgroundTaskIdentifier = UIApplication.shared.beginBackgroundTask(withName: "Task1", expirationHandler: {
       //self.sendEvent(withName: EventType.onActivityStop.rawValue, body: [ "Stop" ]);
-      self.SendNotification(message: "Potresti non essere più visibile agli altri utenti");
-      //self.task2()
-      UIApplication.shared.beginBackgroundTask(withName: "Task2", expirationHandler: {})
-      UIApplication.shared.endBackgroundTask(backgroundTaskIdentifier)
+      UIApplication.shared.endBackgroundTask(backgroundTaskIdentifier);
       backgroundTaskIdentifier = .invalid
       print("Task 1 terminato dal sistema");
+      self.SendNotification(message: "Potresti non essere più visibile agli altri utenti");
     })
     print("Task1")
     var messages = 0;
-    while  messages < 100 && !shouldStop {
+    while  messages < 200 && !shouldStop {
       if(messages%40 == 0){
-        DispatchQueue.main.async{
           self.publish("Gabbo") { (result: Any?) in
           } rejecter: { (errorCode: String?, errorMessage: String?, error: Error?) in
             print(errorMessage ?? "Errore");
           }
-        }
       }
       messages += 1;
       print("Task 1 message: ", messages);
       sleep(4);
     }
     
-    //self.task2()
     UIApplication.shared.endBackgroundTask(backgroundTaskIdentifier)
     self.SendNotification(message: "Non sei più visibile agli altri utenti");
      self.sendEvent(withName: EventType.onActivityStop.rawValue, body: [ "Stop" ]);
      backgroundTaskIdentifier = .invalid
   }
   
-  func task2(){
-    shouldStop = false;
-    backgroundTaskIdentifier = UIApplication.shared.beginBackgroundTask(withName: "Task2", expirationHandler: {
-      //self.sendEvent(withName: EventType.onActivityStop.rawValue, body: [ "Stop" ]);
-      //self.SendNotification();
-      self.task1()
-      UIApplication.shared.endBackgroundTask(backgroundTaskIdentifier)
-      backgroundTaskIdentifier = .invalid
-      })
-    print("Task2")
-    var messages = 0;
-    while  messages < 50 && !shouldStop {
-      if(messages%10 == 0){
-        self.publish("Gabbo") { (result: Any?) in
-        } rejecter: { (errorCode: String?, errorMessage: String?, error: Error?) in
-          print(errorMessage ?? "Errore");
-        }
-      }
-      messages += 1;
-      print("Task 2 message: ", messages);
-      sleep(10);
-    }
-    //fine task
-    self.task1()
-    UIApplication.shared.endBackgroundTask(backgroundTaskIdentifier)
-     //self.SendNotification();
-     //self.sendEvent(withName: EventType.onActivityStop.rawValue, body: [ "Stop" ]);
-     backgroundTaskIdentifier = .invalid
-    
-  }
   @objc
   func stop(){
     print("STOP");

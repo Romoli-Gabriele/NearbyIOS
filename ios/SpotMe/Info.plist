@@ -11,7 +11,6 @@
 	<string>An anonymous token is advertised via Bluetooth to discover nearby devices.</string>
 	<key>BGTaskSchedulerPermittedIdentifiers</key>
 	<array>
-		<string>Task2</string>
 		<string>Task1</string>
 	</array>
 	<key>CFBundleDevelopmentRegion</key>
