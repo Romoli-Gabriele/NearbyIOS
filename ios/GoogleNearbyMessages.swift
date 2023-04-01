@@ -262,7 +262,6 @@ class NearbyMessages: RCTEventEmitter {
 @available(iOS 13.0.0, *)
 @objc
 func backgroundHandler(_ message: String){
-  print("parte back");
   if(self.messageManager != nil){
     backgroundTaskIdentifier = UIApplication.shared.beginBackgroundTask(withName: "Task1", expirationHandler: {
       //self.sendEvent(withName: EventType.onActivityStop.rawValue, body: [ "Stop" ]);
@@ -286,11 +285,9 @@ func backgroundHandler(_ message: String){
   }
 @objc
   func stopBackground(){
-    print("ferma back");
       self.shouldStop = true;
       UIApplication.shared.endBackgroundTask(backgroundTaskIdentifier);
       backgroundTaskIdentifier = .invalid;
-      print("ricevo stop");
   }
   
   func parseDiscoveryMediums(_ discoveryMediums: Array<NSString>) -> GNSDiscoveryMediums {

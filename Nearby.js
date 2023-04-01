@@ -143,7 +143,6 @@ const background = message => {
   if (isIos) {
     NativeModules.GoogleNearbyMessages.unsubscribe();
     NativeModules.GoogleNearbyMessages.backgroundHandler(message);
-    console.log("Chiedo BAck");
   }
 }
 
@@ -152,7 +151,6 @@ const stopBackground = (message)=>{
     NativeModules.GoogleNearbyMessages.stopBackground();
     NativeModules.GoogleNearbyMessages.subscribe();
     NativeModules.GoogleNearbyMessages.publish(message);
-    console.log("Chiedo stop");
   }
 }
 
