@@ -10,7 +10,7 @@ const isIos = Platform.OS == "ios";
 
 
 /**
- * Inizzia la pubblicazione (anche in background) e lo scanning dei messaggi
+ * Inizia la pubblicazione (anche in background per Android) e lo scanning dei messaggi
  * @param {string} message
  */
 const start = message => {
@@ -18,7 +18,8 @@ const start = message => {
     NativeModules.MyNativeModule.start();
     NativeModules.MyNativeModule.startActivity(message);
   } else if (isIos) {
-    NativeModules.GoogleNearbyMessages.backgroundHandler();
+    NativeModules.GoogleNearbyMessages.subscribe();
+    NativeModules.GoogleNearbyMessages.publish(message);
   }
 };
 
@@ -27,7 +28,7 @@ const start = message => {
  */
 const stop = () => {
   if (isAndroid) NativeModules.MyNativeModule.stop();
-  else if(isIos) {
+  else if (isIos) {
     NativeModules.GoogleNearbyMessages.stop();
     console.log("Disconnetti");
   }
@@ -138,12 +139,22 @@ const registerToEvents = (
   };
 }
 
-if (isAndroid) {
-  //
-} else if (isIos) {
-  //da aggiungere eventi
+const background = message => {
+  if (isIos) {
+    NativeModules.GoogleNearbyMessages.unsubscribe();
+    NativeModules.GoogleNearbyMessages.backgroundHandler(message);
+    console.log("Chiedo BAck");
+  }
 }
 
+const stopBackground = (message)=>{
+  if(isIos){
+    NativeModules.GoogleNearbyMessages.stopBackground();
+    NativeModules.GoogleNearbyMessages.subscribe();
+    NativeModules.GoogleNearbyMessages.publish(message);
+    console.log("Chiedo stop");
+  }
+}
 
 export default {
   init,
@@ -151,4 +162,6 @@ export default {
   stop,
   isActive,
   registerToEvents,
+  background,
+  stopBackground,
 };

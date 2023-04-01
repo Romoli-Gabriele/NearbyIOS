@@ -1,5 +1,5 @@
-import React, {useEffect, useState} from 'react';
-import {Button, SafeAreaView, View, Text, ScrollView} from 'react-native';
+import React, {useRef, useEffect, useState} from 'react';
+import {AppState, Button, SafeAreaView, View, Text, ScrollView} from 'react-native';
 import Nearby from './Nearby';
 
 import {getDeviceName} from 'react-native-device-info';
@@ -8,9 +8,37 @@ const App = () => {
   const [deviceName, setDeviceName] = useState('');
   const [devices, setDevices] = useState([]);
   const [isRunning, setIsRunning] = useState(false);
+  const appState = useRef(AppState.currentState);
+  const [appStateVisible, setAppStateVisible] = useState(appState.current);
 
   useEffect(() => {
     Nearby.isActive().then(res => setIsRunning(res));
+  }, []);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', nextAppState => {
+      if (
+        appState.current.match(/inactive|background/) &&
+        nextAppState === 'active'
+      ) {
+        console.log("entro foreground");
+        Nearby.stopBackground("deviceName");
+      }else if(
+        appState.current.match(/inactive|active/) &&
+        nextAppState === 'background'
+      ){
+        console.log("entro background")
+        Nearby.background("deviceName");
+      }
+
+      appState.current = nextAppState;
+      setAppStateVisible(appState.current);
+      console.log('AppState', appState.current);
+    });
+
+    return () => {
+      subscription.remove();
+    };
   }, []);
 
   useEffect(() => {
@@ -51,6 +79,7 @@ const App = () => {
 
   const onPressStop = () => {
     Nearby.stop();
+    setDevices([]);
   };
 
   return (
@@ -63,6 +92,7 @@ const App = () => {
           padding: 10,
         }}>
         Nome del dispositivo: {deviceName}
+        App state: {appStateVisible}
       </Text>
       <View style={{marginVertical: 10}}>
         <Button

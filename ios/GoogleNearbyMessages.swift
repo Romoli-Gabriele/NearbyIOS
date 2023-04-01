@@ -13,7 +13,6 @@ import UserNotifications
 let defaultDiscoveryModes: GNSDiscoveryMode = [.broadcast, .scan]
 let defaultDiscoveryMediums: GNSDiscoveryMediums = .BLE
 var backgroundTaskIdentifier: UIBackgroundTaskIdentifier = .invalid
-var shouldStop = false;
 
 @objc(NearbyMessages)
 class NearbyMessages: RCTEventEmitter {
@@ -50,10 +49,20 @@ class NearbyMessages: RCTEventEmitter {
   private var tempBluetoothManager: CBCentralManager? = nil
   private var tempBluetoothManagerDelegate: CBCentralManagerDelegate? = nil
   private var didCallback = false
+  private var shouldStop = true;
+  private var messages = 0;
+  private let maxMessages = 400;
   
   @objc(connect:discoveryModes:discoveryMediums:resolver:rejecter:)
   func connect(_ apiKey: String, discoveryModes: Array<NSString>, discoveryMediums: Array<NSString>, resolver resolve: RCTPromiseResolveBlock, rejecter reject: RCTPromiseRejectBlock) -> Void {
-    
+    let notificationCenter = UNUserNotificationCenter.current();
+    notificationCenter.requestAuthorization(options: [.badge, .alert, .sound]) {
+      (granted, error) in
+      if(error == nil)
+      {
+        print("Accettate notifiche: \(granted)")
+      }
+    }
     print("GNM_BLE: Connecting...")
     GNSMessageManager.setDebugLoggingEnabled(true)
     GNSMessageManager.setDebugLoggingEnabled(true)
@@ -85,7 +94,7 @@ class NearbyMessages: RCTEventEmitter {
   func disconnect() -> Void {
     print("GNM_BLE: Disconnecting...");
     // TODO: is setting nil enough garbage collection? no need for CFRetain, CFRelease, or CFAutorelease?
-    shouldStop = true;
+    self.shouldStop = true;
     self.currentSubscription = nil
     self.currentPublication = nil
     self.messageManager = nil
@@ -98,55 +107,26 @@ class NearbyMessages: RCTEventEmitter {
       print("GNM_BLE: Publishing...")
     //Rimuovo messaggi precedenti
     if(self.currentPublication != nil){
-      self.unpublish{ (result: Any?) in
-      } rejecter: { (errorCode: String?, errorMessage: String?, error: Error?) in
-        print(errorMessage ?? "Errore");
-      }
+      self.currentPublication = nil;
     }
-      // lavoro task pubblicazione
-    do {
-      if (self.messageManager == nil) {
-        throw GoogleNearbyMessagesError.runtimeError(message: "Google Nearby Messages is not connected! Call connect() before any other calls.")
-      }
-        self.currentPublication = self.messageManager!.publication(with: GNSMessage(content: message.data(using: .utf8)), paramsBlock: { (params: GNSPublicationParams?) in
-          guard let params = params else { return }
-          params.strategy = GNSStrategy(paramsBlock: { (params: GNSStrategyParams?) in
-            guard let params = params else { return }
-            params.allowInBackground = true
-            params.discoveryMediums = .BLE
-            //params.discoveryMode = self.discoveryModes ?? defaultDiscoveryModes
-          })
-        })
-        resolve(nil)
-      } catch {
-        reject("GOOGLE_NEARBY_MESSAGES_ERROR_PUBLISH", error.localizedDescription, error)
-      }
-  }
-
-
-  /*
-  @objc(publish:resolver:rejecter:)
-  func publish(_ message: String, resolver resolve: RCTPromiseResolveBlock, rejecter reject: RCTPromiseRejectBlock) -> Void {
-    print("GNM_BLE: Publishing...")
-      //lavoro task pubblicazione
       do {
         if (self.messageManager == nil) {
           throw GoogleNearbyMessagesError.runtimeError(message: "Google Nearby Messages is not connected! Call connect() before any other calls.")
         }
-        self.currentPublication = self.messageManager!.publication(with: GNSMessage(content: message.data(using: .utf8)), paramsBlock: { (params: GNSPublicationParams?) in
-          guard let params = params else { return }
-          params.strategy = GNSStrategy(paramsBlock: { (params: GNSStrategyParams?) in
+          self.currentPublication = self.messageManager!.publication(with: GNSMessage(content: message.data(using: .utf8)), paramsBlock: { (params: GNSPublicationParams?) in
             guard let params = params else { return }
-            params.allowInBackground = true
-            params.discoveryMediums = .BLE
-            //params.discoveryMode = self.discoveryModes ?? defaultDiscoveryModes
+            params.strategy = GNSStrategy(paramsBlock: { (params: GNSStrategyParams?) in
+              guard let params = params else { return }
+                params.allowInBackground = true;
+              params.discoveryMediums = .BLE
+              params.discoveryMode = self.discoveryModes ?? defaultDiscoveryModes
+            })
           })
-        })
-        resolve(nil)
-      } catch {
-        reject("GOOGLE_NEARBY_MESSAGES_ERROR_PUBLISH", error.localizedDescription, error)
-      }
-  }*/
+          resolve(nil)
+        } catch {
+          reject("GOOGLE_NEARBY_MESSAGES_ERROR_PUBLISH", error.localizedDescription, error)
+        }
+  }
 
    func unpublish(_ resolve: RCTPromiseResolveBlock, rejecter reject: RCTPromiseRejectBlock) -> Void {
      print("GNM_BLE: Unpublishing...");
@@ -182,6 +162,7 @@ class NearbyMessages: RCTEventEmitter {
           guard let params = params else { return }
           params.strategy = GNSStrategy(paramsBlock: { (params: GNSStrategyParams?) in
             guard let params = params else { return }
+            params.allowInBackground = false;
             params.discoveryMediums = self.discoveryMediums ?? defaultDiscoveryMediums
             params.discoveryMode = self.discoveryModes ?? defaultDiscoveryModes
           })
@@ -277,46 +258,39 @@ class NearbyMessages: RCTEventEmitter {
     print("GNM_BLE: invalidate")
     disconnect()
   }
-  @available(iOS 13.0.0, *)
-  @objc
-func backgroundHandler(){
-  let notificationCenter = UNUserNotificationCenter.current();
-  notificationCenter.requestAuthorization(options: [.badge, .alert, .sound]) {
-    (granted, error) in
-    if(error == nil)
-    {
-      print("Accettate notifiche: \(granted)")
+  
+@available(iOS 13.0.0, *)
+@objc
+func backgroundHandler(_ message: String){
+  print("parte back");
+  if(self.messageManager != nil){
+    backgroundTaskIdentifier = UIApplication.shared.beginBackgroundTask(withName: "Task1", expirationHandler: {
+      //self.sendEvent(withName: EventType.onActivityStop.rawValue, body: [ "Stop" ]);
+      UIApplication.shared.endBackgroundTask(backgroundTaskIdentifier);
+      backgroundTaskIdentifier = .invalid
+      print("Task 1 terminato dal sistema");
+      self.SendNotification(message: "Potresti non essere più visibile agli altri utenti");
+    })
+    print("ricevo BAck")
+    DispatchQueue.global().async {
+      self.task1(message:message);
+      UIApplication.shared.endBackgroundTask(backgroundTaskIdentifier)
+     if(self.messages >= self.maxMessages){
+       self.SendNotification(message: "Non sei più visibile agli altri utenti");
+       self.sendEvent(withName: EventType.onActivityStop.rawValue, body: [ "Stop" ]);
+       self.stop();
+     }
+      backgroundTaskIdentifier = .invalid
+     }
     }
   }
-    self.task1();
-  /*let
-  notificationCenter.removeAllPendingNotificationRequests();
-  shouldStop = false;
-  backgroundTaskIdentifier = UIApplication.shared.beginBackgroundTask(withName: "MyBackgroundTask", expirationHandler: {
-    self.sendEvent(withName: EventType.onActivityStop.rawValue, body: [ "Stop" ]);
-    self.SendNotification();
-    UIApplication.shared.endBackgroundTask(backgroundTaskIdentifier)
-    backgroundTaskIdentifier = .invalid
-  })
-  var messages = 0;
-  while  messages < 50 && !shouldStop {
-    self.publish("Gabbo") { (result: Any?) in
-    } rejecter: { (errorCode: String?, errorMessage: String?, error: Error?) in
-      print(errorMessage ?? "Errore");
-    }
-    messages += 1;
-    sleep(60);
-  }
-  // Avvia il thread in background
-  //DispatchQueue.global(qos: .default).async {
-    
-    Thread.sleep(forTimeInterval: 120);
-    
-    // Termina il task in background quando l'operazione è completata
-    UIApplication.shared.endBackgroundTask(backgroundTaskIdentifier)
-    self.SendNotification();
-    self.sendEvent(withName: EventType.onActivityStop.rawValue, body: [ "Stop" ]);
-    backgroundTaskIdentifier = .invalid*/
+@objc
+  func stopBackground(){
+    print("ferma back");
+      self.shouldStop = true;
+      UIApplication.shared.endBackgroundTask(backgroundTaskIdentifier);
+      backgroundTaskIdentifier = .invalid;
+      print("ricevo stop");
   }
   
   func parseDiscoveryMediums(_ discoveryMediums: Array<NSString>) -> GNSDiscoveryMediums {
@@ -373,43 +347,32 @@ func backgroundHandler(){
     notificationCenter.add(request){ error in
       if let error = error {
           print("Errore nell'aggiunta della notifica: \(error)")
-      } else {
-          print("Notifica aggiunta con successo")
       }
     }
   }
-  func task1(){
-    shouldStop = false;
-    backgroundTaskIdentifier = UIApplication.shared.beginBackgroundTask(withName: "Task1", expirationHandler: {
-      //self.sendEvent(withName: EventType.onActivityStop.rawValue, body: [ "Stop" ]);
-      UIApplication.shared.endBackgroundTask(backgroundTaskIdentifier);
-      backgroundTaskIdentifier = .invalid
-      print("Task 1 terminato dal sistema");
-      self.SendNotification(message: "Potresti non essere più visibile agli altri utenti");
-    })
-    print("Task1")
-    var messages = 0;
-    while  messages < 200 && !shouldStop {
-      if(messages%40 == 0){
-          self.publish("Gabbo") { (result: Any?) in
+  
+  func task1(message: String){
+    self.shouldStop = false;
+    self.messages = 0;
+      while !self.shouldStop &&  self.messages < self.maxMessages {
+        if(self.messages%25 == 0){
+          self.publish(message) { (result: Any?) in
+            self.SendNotification(message: "Inviato correttamente");
           } rejecter: { (errorCode: String?, errorMessage: String?, error: Error?) in
             print(errorMessage ?? "Errore");
+            self.SendNotification(message: "Errore invio");
           }
+        }
+        self.messages += 1;
+        print("Task 1 message: ", self.messages);
+        sleep(3);
       }
-      messages += 1;
-      print("Task 1 message: ", messages);
-      sleep(4);
-    }
-    
-    UIApplication.shared.endBackgroundTask(backgroundTaskIdentifier)
-    self.SendNotification(message: "Non sei più visibile agli altri utenti");
-     self.sendEvent(withName: EventType.onActivityStop.rawValue, body: [ "Stop" ]);
-     backgroundTaskIdentifier = .invalid
   }
   
   @objc
   func stop(){
     print("STOP");
+    self.shouldStop = true;
     self.unsubscribe()
     self.disconnect()
   }
