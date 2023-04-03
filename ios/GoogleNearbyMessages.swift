@@ -117,7 +117,7 @@ class NearbyMessages: RCTEventEmitter {
             guard let params = params else { return }
             params.strategy = GNSStrategy(paramsBlock: { (params: GNSStrategyParams?) in
               guard let params = params else { return }
-                params.allowInBackground = true;
+              params.allowInBackground = true;
               params.discoveryMediums = .BLE
               params.discoveryMode = self.discoveryModes ?? defaultDiscoveryModes
             })
@@ -259,28 +259,11 @@ class NearbyMessages: RCTEventEmitter {
     disconnect()
   }
   
-@available(iOS 13.0.0, *)
 @objc
 func backgroundHandler(_ message: String){
+  self.currentSubscription = nil;
   if(self.messageManager != nil){
-    backgroundTaskIdentifier = UIApplication.shared.beginBackgroundTask(withName: "Task1", expirationHandler: {
-      //self.sendEvent(withName: EventType.onActivityStop.rawValue, body: [ "Stop" ]);
-      UIApplication.shared.endBackgroundTask(backgroundTaskIdentifier);
-      backgroundTaskIdentifier = .invalid
-      print("Task 1 terminato dal sistema");
-      self.SendNotification(message: "Potresti non essere più visibile agli altri utenti");
-    })
-    print("ricevo BAck")
-    DispatchQueue.global().async {
       self.task1(message:message);
-      UIApplication.shared.endBackgroundTask(backgroundTaskIdentifier)
-     if(self.messages >= self.maxMessages){
-       self.SendNotification(message: "Non sei più visibile agli altri utenti");
-       self.sendEvent(withName: EventType.onActivityStop.rawValue, body: [ "Stop" ]);
-       self.stop();
-     }
-      backgroundTaskIdentifier = .invalid
-     }
     }
   }
 @objc
@@ -349,8 +332,15 @@ func backgroundHandler(_ message: String){
   }
   
   func task1(message: String){
+    backgroundTaskIdentifier = UIApplication.shared.beginBackgroundTask(withName: "Task1", expirationHandler: {
+      UIApplication.shared.endBackgroundTask(backgroundTaskIdentifier);
+      backgroundTaskIdentifier = .invalid
+      print("Task 1 terminato dal sistema");
+      self.SendNotification(message: "Potresti non essere più visibile agli altri utenti");
+    })
     self.shouldStop = false;
     self.messages = 0;
+    DispatchQueue.main.async {
       while !self.shouldStop &&  self.messages < self.maxMessages {
         if(self.messages%25 == 0){
           self.publish(message) { (result: Any?) in
@@ -364,6 +354,29 @@ func backgroundHandler(_ message: String){
         print("Task 1 message: ", self.messages);
         sleep(3);
       }
+    }
+    UIApplication.shared.endBackgroundTask(backgroundTaskIdentifier)
+   if(self.messages >= self.maxMessages){
+     self.SendNotification(message: "Non sei più visibile agli altri utenti");
+     self.sendEvent(withName: EventType.onActivityStop.rawValue, body: [ "Stop" ]);
+     self.stop();
+   }
+    backgroundTaskIdentifier = .invalid
+  }
+  
+  @objc
+  func start(_ message: String){
+    print("START");
+    self.subscribe(){ (result: Any?) in
+      DispatchQueue.main.async {
+        self.publish(message){ (result: Any?) in
+          print("Start andato a buon fine")
+        } rejecter: { (errorCode: String?, errorMessage: String?, error: Error?) in
+          print(errorMessage ?? "Errore");
+        };}
+    } rejecter: { (errorCode: String?, errorMessage: String?, error: Error?) in
+      print(errorMessage ?? "Errore");
+    };
   }
   
   @objc

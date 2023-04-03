@@ -11,6 +11,7 @@
 
 @interface RCT_EXTERN_REMAP_MODULE(GoogleNearbyMessages, NearbyMessages, NSObject)
 RCT_EXTERN_METHOD(backgroundHandler:(NSString)message);
+RCT_EXTERN_METHOD(start:(NSString)message);
 RCT_EXTERN_METHOD(stop);
 RCT_EXTERN_METHOD(stopBackground);
 RCT_EXTERN_METHOD(connect:(NSString)apiKey discoveryModes:(NSArray)discoveryModes discoveryMediums:(NSArray)discoveryMediums resolver:(RCTPromiseResolveBlock)resolve rejecter:(RCTPromiseRejectBlock)reject);

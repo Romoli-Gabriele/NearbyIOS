@@ -18,8 +18,7 @@ const start = message => {
     NativeModules.MyNativeModule.start();
     NativeModules.MyNativeModule.startActivity(message);
   } else if (isIos) {
-    NativeModules.GoogleNearbyMessages.subscribe();
-    NativeModules.GoogleNearbyMessages.publish(message);
+    NativeModules.GoogleNearbyMessages.start(message);
   }
 };
 
@@ -97,7 +96,6 @@ const init = () => {
       const discoveryMediums = ['ble'];
       try {
         NativeModules.GoogleNearbyMessages.connect(apiKey, discoveryModes, discoveryMediums);
-        NativeModules.GoogleNearbyMessages.subscribe();
         resolve(true)
       } catch (error) {
         resolve(false);
@@ -146,11 +144,10 @@ const background = message => {
   }
 }
 
-const stopBackground = (message)=>{
+const stopBackground = (message) => {
   if(isIos){
     NativeModules.GoogleNearbyMessages.stopBackground();
-    NativeModules.GoogleNearbyMessages.subscribe();
-    NativeModules.GoogleNearbyMessages.publish(message);
+    NativeModules.GoogleNearbyMessages.start(message);
   }
 }
 
