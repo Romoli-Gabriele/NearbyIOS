@@ -508,6 +508,8 @@
 				ENABLE_BITCODE = NO;
 				EXCLUDED_ARCHS = "";
 				INFOPLIST_FILE = SpotMe/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = SpotLive;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.social-networking";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
@@ -541,6 +543,8 @@
 				DEVELOPMENT_TEAM = U3KBLLT33M;
 				EXCLUDED_ARCHS = "";
 				INFOPLIST_FILE = SpotMe/Info.plist;
+				INFOPLIST_KEY_CFBundleDisplayName = SpotLive;
+				INFOPLIST_KEY_LSApplicationCategoryType = "public.app-category.social-networking";
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
 					"@executable_path/Frameworks",
