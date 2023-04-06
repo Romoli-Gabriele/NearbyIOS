@@ -13,6 +13,7 @@ import UserNotifications
 let defaultDiscoveryModes: GNSDiscoveryMode = [.broadcast, .scan]
 let defaultDiscoveryMediums: GNSDiscoveryMediums = .BLE
 var backgroundTaskIdentifier: UIBackgroundTaskIdentifier = .invalid
+var thread: Thread? = nil;
 
 @objc(NearbyMessages)
 class NearbyMessages: RCTEventEmitter {
@@ -263,11 +264,18 @@ class NearbyMessages: RCTEventEmitter {
 func backgroundHandler(_ message: String){
   self.currentSubscription = nil;
   if(self.messageManager != nil){
-      self.task1(message:message);
+    self.stopBackground();
+    self.messages = 0;
+    sleep(4);
+    thread = Thread{
+      self.task1(message: message);
     }
+    thread?.start();
+  }
   }
 @objc
   func stopBackground(){
+    print("Ferma back -->")
       self.shouldStop = true;
       UIApplication.shared.endBackgroundTask(backgroundTaskIdentifier);
       backgroundTaskIdentifier = .invalid;
@@ -333,6 +341,8 @@ func backgroundHandler(_ message: String){
   
   func task1(message: String){
     backgroundTaskIdentifier = UIApplication.shared.beginBackgroundTask(withName: "Task1", expirationHandler: {
+      self.shouldStop = true;
+      sleep(4);
       UIApplication.shared.endBackgroundTask(backgroundTaskIdentifier);
       backgroundTaskIdentifier = .invalid
       print("Task 1 terminato dal sistema");
@@ -340,7 +350,6 @@ func backgroundHandler(_ message: String){
     })
     self.shouldStop = false;
     self.messages = 0;
-    DispatchQueue.main.async {
       while !self.shouldStop &&  self.messages < self.maxMessages {
         if(self.messages%25 == 0){
           self.publish(message) { (result: Any?) in
@@ -354,13 +363,13 @@ func backgroundHandler(_ message: String){
         print("Task 1 message: ", self.messages);
         sleep(3);
       }
-    }
     UIApplication.shared.endBackgroundTask(backgroundTaskIdentifier)
    if(self.messages >= self.maxMessages){
      self.SendNotification(message: "Non sei più visibile agli altri utenti");
      self.sendEvent(withName: EventType.onActivityStop.rawValue, body: [ "Stop" ]);
      self.stop();
    }
+    print("Fermata");
     backgroundTaskIdentifier = .invalid
   }
   
@@ -369,11 +378,16 @@ func backgroundHandler(_ message: String){
     print("START");
     self.subscribe(){ (result: Any?) in
       DispatchQueue.main.async {
-        self.publish(message){ (result: Any?) in
-          print("Start andato a buon fine")
-        } rejecter: { (errorCode: String?, errorMessage: String?, error: Error?) in
+        self.publish(message){(result: Any?) in
+          print("Primo messaggio inviato")
+        }rejecter: { (errorCode: String?, errorMessage: String?, error: Error?) in
           print(errorMessage ?? "Errore");
-        };}
+        };
+      }
+      thread = Thread{
+        self.task1(message: message);
+      }
+      thread?.start();
     } rejecter: { (errorCode: String?, errorMessage: String?, error: Error?) in
       print(errorMessage ?? "Errore");
     };
