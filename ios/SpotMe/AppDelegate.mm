@@ -35,33 +35,5 @@
 {
   return true;
 }
-/*- (void)applicationDidEnterBackground:(UIApplication *)application {
-  __block UIBackgroundTaskIdentifier backgroundTaskIdentifier = [application beginBackgroundTaskWithName:@"MyBackgroundTask" expirationHandler:^{
-      // Termina il task in background quando scade il tempo di esecuzione
-      [application endBackgroundTask:backgroundTaskIdentifier];
-      backgroundTaskIdentifier = UIBackgroundTaskInvalid;
-  }];
-  
-  // Avvia il thread in background
-  dispatch_async(dispatch_get_global_queue(DISPATCH_QUEUE_PRIORITY_DEFAULT, 0), ^{
-      // Esegui qui il tuo codice in background
-    Boolean send = true;
-    int count = 0;
-    while (send) {
-      NSLog(@"Background thread running");
-      
-      [NSThread sleepForTimeInterval:5.0];
-        count++;
-        if(count == 10){
-          send = false;
-        }
-        
-      }
-    
-      // Termina il task in background quando l'operazione è completata
-      [application endBackgroundTask:backgroundTaskIdentifier];
-      backgroundTaskIdentifier = UIBackgroundTaskInvalid;
-  });
-}*/
 
 @end

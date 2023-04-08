@@ -45,17 +45,10 @@ const App = () => {
     const removeEvents = Nearby.registerToEvents(
       // MESSAGE FOUND
       event => {
-        console.log(
-          `[${deviceName}]: messaggio ricevuto dal dispositivo "${event.message}"`,
-        );
-        setDevices(d => [...d, event.message]);
+        console.log(event);
+        setDevices(d => [...d, event]);
       },
       // MESSAGE LOST
-      event => {
-        console.log(
-          `[${deviceName}]: messaggio perso dal dispositivo "${event.message}"`,
-        );
-      },
       // ACTIVITY START
       () => setIsRunning(true),
       // ACTIVITY STOP
@@ -66,13 +59,8 @@ const App = () => {
   }, []);
 
   function onPressStart() {
-    Nearby.init()
-      .then(success => {
-        if (success) {
-          Nearby.start(deviceName);
-        }
-      })
-      .catch(console.error);
+    Nearby.start(deviceName);
+    setIsRunning(true);
   }
 
   const onPressStop = () => {

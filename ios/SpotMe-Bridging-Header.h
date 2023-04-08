@@ -4,7 +4,6 @@
 #import <Foundation/Foundation.h>
 #import "React/RCTBridgeModule.h"
 #import "React/RCTEventEmitter.h"
-#import "GNSMessages.h"
 
 
 @interface GoogleNearbyMessagesBridge: NSObject

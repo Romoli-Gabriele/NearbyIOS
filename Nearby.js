@@ -16,9 +16,8 @@ const isIos = Platform.OS == "ios";
 const start = message => {
   if (isAndroid) {
     NativeModules.MyNativeModule.start();
-    NativeModules.MyNativeModule.startActivity(message);
   } else if (isIos) {
-    NativeModules.GoogleNearbyMessages.start(message);
+    NativeModules.GoogleNearbyMessages.start();
   }
 };
 
@@ -29,7 +28,6 @@ const stop = () => {
   if (isAndroid) NativeModules.MyNativeModule.stop();
   else if (isIos) {
     NativeModules.GoogleNearbyMessages.stop();
-    console.log("Disconnetti");
   }
 };
 
@@ -106,7 +104,6 @@ const init = () => {
 
 const registerToEvents = (
   onMessageFound,
-  onMessageLost,
   onActivityStart,
   onActivityStop,
 ) => {
@@ -117,13 +114,11 @@ const registerToEvents = (
     eventEmitter = new NativeEventEmitter()
     emitters.push(
       eventEmitter.addListener('onMessageFound', onMessageFound),
-      eventEmitter.addListener('onMessageLost', onMessageLost),
     );
   } else if (isIos) {
     eventEmitter = new NativeEventEmitter(NativeModules.GoogleNearbyMessages)
     emitters.push(
-      eventEmitter.addListener('MESSAGE_FOUND', onMessageFound),
-      eventEmitter.addListener('MESSAGE_LOST', onMessageLost),
+      eventEmitter.addListener('deviceFound', onMessageFound),
     );
     emitters.push(
       eventEmitter.addListener('onActivityStart', onActivityStart),
@@ -139,15 +134,15 @@ const registerToEvents = (
 
 const background = message => {
   if (isIos) {
-    NativeModules.GoogleNearbyMessages.unsubscribe();
-    NativeModules.GoogleNearbyMessages.backgroundHandler(message);
+    //NativeModules.GoogleNearbyMessages.unsubscribe();
+    //NativeModules.GoogleNearbyMessages.backgroundHandler(message);
   }
 }
 
 const stopBackground = (message) => {
   if(isIos){
-    NativeModules.GoogleNearbyMessages.stopBackground();
-    NativeModules.GoogleNearbyMessages.start(message);
+   //NativeModules.GoogleNearbyMessages.stopBackground();
+    //NativeModules.GoogleNearbyMessages.start(message);
   }
 }
 

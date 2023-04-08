@@ -73,22 +73,10 @@ PODS:
     - FlipperKit/FlipperKitNetworkPlugin
   - fmt (6.2.1)
   - glog (0.3.5)
-  - GoogleInterchangeUtilities (1.2.2):
-    - GoogleSymbolUtilities (~> 1.1)
-  - GoogleNetworkingUtilities (1.2.2):
-    - GoogleSymbolUtilities (~> 1.1)
-  - GoogleSymbolUtilities (1.1.2)
-  - GoogleUtilitiesLegacy (1.3.2):
-    - GoogleSymbolUtilities (~> 1.1)
   - hermes-engine (0.71.4):
     - hermes-engine/Pre-built (= 0.71.4)
   - hermes-engine/Pre-built (0.71.4)
   - libevent (2.1.12)
-  - NearbyMessages (1.1.1):
-    - GoogleInterchangeUtilities (~> 1.2)
-    - GoogleNetworkingUtilities (~> 1.2)
-    - GoogleSymbolUtilities (~> 1.1)
-    - GoogleUtilitiesLegacy (~> 1.3)
   - OpenSSL-Universal (1.1.1100)
   - RCT-Folly (2021.07.22.00):
     - boost
@@ -463,7 +451,6 @@ DEPENDENCIES:
   - glog (from `../node_modules/react-native/third-party-podspecs/glog.podspec`)
   - hermes-engine (from `../node_modules/react-native/sdks/hermes-engine/hermes-engine.podspec`)
   - libevent (~> 2.1.12)
-  - NearbyMessages
   - OpenSSL-Universal (= 1.1.1100)
   - RCT-Folly (from `../node_modules/react-native/third-party-podspecs/RCT-Folly.podspec`)
   - RCTRequired (from `../node_modules/react-native/Libraries/RCTRequired`)
@@ -511,12 +498,7 @@ SPEC REPOS:
     - Flipper-RSocket
     - FlipperKit
     - fmt
-    - GoogleInterchangeUtilities
-    - GoogleNetworkingUtilities
-    - GoogleSymbolUtilities
-    - GoogleUtilitiesLegacy
     - libevent
-    - NearbyMessages
     - OpenSSL-Universal
     - SocketRocket
     - YogaKit
@@ -612,13 +594,8 @@ SPEC CHECKSUMS:
   FlipperKit: cbdee19bdd4e7f05472a66ce290f1b729ba3cb86
   fmt: ff9d55029c625d3757ed641535fd4a75fedc7ce9
   glog: 04b94705f318337d7ead9e6d17c019bd9b1f6b1b
-  GoogleInterchangeUtilities: d5bc4d88d5b661ab72f9d70c58d02ca8c27ad1f7
-  GoogleNetworkingUtilities: 3edd3a8161347494f2da60ea0deddc8a472d94cb
-  GoogleSymbolUtilities: 631ee17048aa5e9ab133470d768ea997a5ef9b96
-  GoogleUtilitiesLegacy: 5501bedec1646bd284286eb5fc9453f7e23a12f4
   hermes-engine: a1f157c49ea579c28b0296bda8530e980c45bdb3
   libevent: 4049cae6c81cdb3654a443be001fb9bdceff7913
-  NearbyMessages: bd9e88f2df7fbab78be58fed58580d5d5bd62cbf
   OpenSSL-Universal: ebc357f1e6bc71fa463ccb2fe676756aff50e88c
   RCT-Folly: 424b8c9a7a0b9ab2886ffe9c3b041ef628fd4fb1
   RCTRequired: 5a024fdf458fa8c0d82fc262e76f982d4dcdecdd
@@ -653,6 +630,6 @@ SPEC CHECKSUMS:
   Yoga: 79dd7410de6f8ad73a77c868d3d368843f0c93e0
   YogaKit: f782866e155069a2cca2517aafea43200b01fd5a
 
-PODFILE CHECKSUM: 383037e47f0c2a15cfd3efc78c799ee1509d0ce3
+PODFILE CHECKSUM: d8d397aba4779ebb09bb12ccc3de7cf429278cab
 
 COCOAPODS: 1.11.3
