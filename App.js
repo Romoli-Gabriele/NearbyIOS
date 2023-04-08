@@ -8,45 +8,25 @@ const App = () => {
   const [deviceName, setDeviceName] = useState('');
   const [devices, setDevices] = useState([]);
   const [isRunning, setIsRunning] = useState(false);
-  const appState = useRef(AppState.currentState);
-  const [appStateVisible, setAppStateVisible] = useState(appState.current);
 
   useEffect(() => {
     Nearby.isActive().then(res => setIsRunning(res));
   }, []);
 
-  useEffect(() => {
-    const subscription = AppState.addEventListener('change', nextAppState => {
-      if (
-        appState.current.match(/inactive|background/) &&
-        nextAppState === 'active'
-      ) {
-        Nearby.stopBackground("deviceName");
-      }else if(
-        appState.current.match(/inactive|active/) &&
-        nextAppState === 'background'
-      ){
-        Nearby.background("deviceName");
-      }
-
-      appState.current = nextAppState;
-      setAppStateVisible(appState.current);
-      console.log('AppState', appState.current);
-    });
-
-    return () => {
-      subscription.remove();
-    };
-  }, []);
-
-  useEffect(() => {
+  useEffect(() =>{
     getDeviceName().then(setDeviceName);
     // Eventi:
     const removeEvents = Nearby.registerToEvents(
       // MESSAGE FOUND
       event => {
-        console.log(event);
-        setDevices(d => [...d, event]);
+        console.log(event)
+        /*if(event.contains("SPOTLIVE:")){
+          event = event.replace("SPOTLIVE:","");
+          if(!devices.includes(event)){
+            //mettere chiamata per vedere se esiste ancora il dispositivo o se è stato fermato
+            setDevices(d => [...d, event]);
+          }
+        }*/
       },
       // MESSAGE LOST
       // ACTIVITY START
@@ -56,15 +36,16 @@ const App = () => {
     );
 
     return () => removeEvents();
-  }, []);
+  }, [devices]);
 
   function onPressStart() {
-    Nearby.start(deviceName);
+    Nearby.start();
     setIsRunning(true);
   }
 
   const onPressStop = () => {
     Nearby.stop();
+    setIsRunning(false);
     setDevices([]);
   };
 
@@ -78,7 +59,6 @@ const App = () => {
           padding: 10,
         }}>
         Nome del dispositivo: {deviceName}
-        App state: {appStateVisible}
       </Text>
       <View style={{marginVertical: 10}}>
         <Button

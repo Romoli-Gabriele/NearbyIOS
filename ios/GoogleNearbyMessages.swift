@@ -1,91 +1,87 @@
-//  GoogleNearbyMessages.swift
-//  SpotMe
-//
-//  Created by Gabriele Romoli on 13/03/23.
-//
-
 import Foundation
 import CoreBluetooth
 import UserNotifications
 
 @objc(NearbyMessages)
 class NearbyMessages: RCTEventEmitter {
+  private var bleManager: BLEManager?
+  private var advertiser: Advertiser?
+  var eventEmitter: RCTEventEmitter?
+  
   override class func requiresMainQueueSetup() -> Bool {
-          return true
-      }
-    private var bleManager: BLEManager?
-    private var advertiser: Advertiser?
+    return true
+  }
+
+  override init() {
+    super.init()
+    bleManager = BLEManager(eventEmitter: self)
+    eventEmitter = self
+  }
   
-    override init() {
-      super.init()
-          bleManager = BLEManager()
-          advertiser = Advertiser()
-    }
+  override func supportedEvents() -> [String]! {
+    return ["deviceFound", "onActivityStart", "onActivityStop"]
+  }
   
-    override func supportedEvents() -> [String]! {
-        return ["deviceFound", "onActivityStart", "onActivityStop"]
-    }
-    @objc
+  @objc
   func start(){
     bleManager?.start()
+    advertiser = Advertiser(code: "sianmviwiviiqiifnc")
     sendEvent(withName: "onActivityStart", body: nil)
   }
-    @objc
-    func stop(){
-        bleManager?.stop()
-        advertiser?.stop()
-      sendEvent(withName: "onActivityStop", body: nil)
-    }
+  
+  @objc
+  func stop(){
+    bleManager?.stop()
+    advertiser?.stop()
+    sendEvent(withName: "onActivityStop", body: nil)
+  }
 }
 
 class BLEManager: NSObject, CBCentralManagerDelegate {
-    private var centralManager: CBCentralManager!
-    
-    override init() {
-        super.init()
-        centralManager = CBCentralManager(delegate: self, queue: nil)
-    }
-    
-    func start() {
-        if centralManager.state == .poweredOn {
-            centralManager.scanForPeripherals(withServices: nil, options: nil)
-        }
-    }
+  private var centralManager: CBCentralManager!
+  var eventEmitter: RCTEventEmitter?
   
-    func stop() {
-        centralManager.stopScan()
-    }
-    
-    func centralManagerDidUpdateState(_ central: CBCentralManager) {
-        if central.state == .poweredOn {
-            //start()
-        } else {
-            // Handle Bluetooth not available or not authorized
-        }
-    }
-    
-    func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String : Any], rssi RSSI: NSNumber) {
-      if(peripheral.name != nil){
-        print(peripheral.name ?? "");
-        sendEvent(withName: "deviceFound", body: peripheral.name);
-      }
-    }
+  init(eventEmitter: RCTEventEmitter) {
+    super.init()
+    centralManager = CBCentralManager(delegate: self, queue: nil)
+    self.eventEmitter = eventEmitter
+  }
   
-    private func sendEvent(withName name: String, body: Any?) {
-        DispatchQueue.main.async {
-            self.sendEvent(withName: name, body: body)
-        }
+  func start() {
+    if centralManager.state == .poweredOn {
+      centralManager.scanForPeripherals(withServices: nil, options: nil)
     }
+  }
+  
+  func stop() {
+    centralManager.stopScan()
+  }
+  
+  func centralManagerDidUpdateState(_ central: CBCentralManager) {
+    if central.state == .poweredOn {
+      //start()
+    } else {
+      // Handle Bluetooth not available or not authorized
+    }
+  }
+  
+  func centralManager(_ central: CBCentralManager, didDiscover peripheral: CBPeripheral, advertisementData: [String : Any], rssi RSSI: NSNumber) {
+    if(peripheral.name != nil){
+      eventEmitter?.sendEvent(withName: "deviceFound", body: peripheral.name ?? "");
+    }
+  }
 }
+
 
 class Advertiser: NSObject, CBPeripheralManagerDelegate {
   private var peripheralManager: CBPeripheralManager!
   private let serviceUUID = CBUUID(string: "169454ee-d633-11ed-afa1-0242ac120002")
   private let characteristicUUID = CBUUID(string: "169454ee-d633-11ed-afa1-0242ac120002")
-  private let identifier = "SPOTLIVE:Altro-codice-utente" // Aggiungi l'identifier qui
+  private var identifier: String = "SPOTLIVE:" // Aggiungi l'identifier qui
   
-  override init() {
+  init(code: String) {
     super.init()
+    identifier.append(code);
     peripheralManager = CBPeripheralManager(delegate: self, queue: nil)
   }
   
@@ -95,8 +91,8 @@ class Advertiser: NSObject, CBPeripheralManagerDelegate {
       let service = CBMutableService(type: serviceUUID, primary: true)
       service.characteristics = [characteristic]
       peripheral.add(service)
-      peripheral.startAdvertising([CBAdvertisementDataServiceUUIDsKey: [serviceUUID],
-                                      CBAdvertisementDataLocalNameKey: identifier]) // Utilizza l'identifier qui
+      peripheral.startAdvertising([CBAdvertisementDataServiceUUIDsKey: [serviceUUID], CBAdvertisementDataLocalNameKey: identifier])
+      print(identifier);
     } else {
       // Handle Bluetooth not available or not authorized
     }

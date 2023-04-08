@@ -13,7 +13,7 @@ const isIos = Platform.OS == "ios";
  * Inizia la pubblicazione (anche in background per Android) e lo scanning dei messaggi
  * @param {string} message
  */
-const start = message => {
+const start = () => {
   if (isAndroid) {
     NativeModules.MyNativeModule.start();
   } else if (isIos) {
@@ -47,61 +47,6 @@ const isActive = () => {
   });
 };
 
-/**
- * Inizzializza nearby e i permessi
- */
-const init = () => {
-  if (isAndroid) {
-    return new Promise(resolve => {
-      PermissionsAndroid.requestMultiple([
-        PermissionsAndroid.PERMISSIONS.ACCESS_FINE_LOCATION,
-        PermissionsAndroid.PERMISSIONS.ACCESS_COARSE_LOCATION,
-        PermissionsAndroid.PERMISSIONS.ACCESS_BACKGROUND_LOCATION,
-        PermissionsAndroid.PERMISSIONS.BLUETOOTH_CONNECT,
-        PermissionsAndroid.PERMISSIONS.BLUETOOTH_SCAN,
-        PermissionsAndroid.PERMISSIONS.BLUETOOTH_ADVERTISE,
-        PermissionsAndroid.PERMISSIONS.NEARBY_WIFI_DEVICES,
-      ]).then(result => {
-        const isGranted =
-          result['android.permission.BLUETOOTH_CONNECT'] ===
-          PermissionsAndroid.RESULTS.GRANTED &&
-          result['android.permission.BLUETOOTH_SCAN'] ===
-          PermissionsAndroid.RESULTS.GRANTED &&
-          result['android.permission.ACCESS_FINE_LOCATION'] ===
-          PermissionsAndroid.RESULTS.GRANTED;
-
-        console.log({
-          isGranted
-        });
-
-        NativeModules.MyNativeModule.initNearby(isPlayServicesAvailable => {
-          console.log({
-            isPlayServicesAvailable
-          });
-          if (isPlayServicesAvailable) {
-            resolve(true);
-            return;
-          } else {
-            resolve(false);
-          }
-        });
-      });
-    });
-  } else if (isIos) {
-    return new Promise(resolve => {
-      const apiKey = 'AIzaSyCyw0Zkd-uA-NlF3Tk4DVVtBk7OvgA_E98';
-      const discoveryModes = ['broadcast', 'scan'];
-      const discoveryMediums = ['ble'];
-      try {
-        NativeModules.GoogleNearbyMessages.connect(apiKey, discoveryModes, discoveryMediums);
-        resolve(true)
-      } catch (error) {
-        resolve(false);
-      }
-    })
-  }
-};
-
 const registerToEvents = (
   onMessageFound,
   onActivityStart,
@@ -132,26 +77,9 @@ const registerToEvents = (
   };
 }
 
-const background = message => {
-  if (isIos) {
-    //NativeModules.GoogleNearbyMessages.unsubscribe();
-    //NativeModules.GoogleNearbyMessages.backgroundHandler(message);
-  }
-}
-
-const stopBackground = (message) => {
-  if(isIos){
-   //NativeModules.GoogleNearbyMessages.stopBackground();
-    //NativeModules.GoogleNearbyMessages.start(message);
-  }
-}
-
 export default {
-  init,
   start,
   stop,
   isActive,
   registerToEvents,
-  background,
-  stopBackground,
 };
