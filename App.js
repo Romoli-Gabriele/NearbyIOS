@@ -20,13 +20,13 @@ const App = () => {
       // MESSAGE FOUND
       event => {
         console.log(event)
-        /*if(event.contains("SPOTLIVE:")){
+        if(event.contains("SPOTLIVE:")){
           event = event.replace("SPOTLIVE:","");
-          if(!devices.includes(event)){
+          if(!devices.includes(event) && event != ""){
             //mettere chiamata per vedere se esiste ancora il dispositivo o se è stato fermato
             setDevices(d => [...d, event]);
           }
-        }*/
+        }
       },
       // MESSAGE LOST
       // ACTIVITY START

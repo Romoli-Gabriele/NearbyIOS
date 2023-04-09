@@ -25,12 +25,13 @@ class NearbyMessages: RCTEventEmitter {
   @objc
   func start(){
     bleManager?.start()
-    advertiser = Advertiser(code: "sianmviwiviiqiifnc")
+    advertiser = Advertiser(code: "gcyguiisdfgh")
     sendEvent(withName: "onActivityStart", body: nil)
   }
   
   @objc
   func stop(){
+    advertiser = Advertiser(code: "")
     bleManager?.stop()
     advertiser?.stop()
     sendEvent(withName: "onActivityStop", body: nil)
@@ -94,11 +95,12 @@ class Advertiser: NSObject, CBPeripheralManagerDelegate {
       peripheral.startAdvertising([CBAdvertisementDataServiceUUIDsKey: [serviceUUID], CBAdvertisementDataLocalNameKey: identifier])
       print(identifier);
     } else {
-      // Handle Bluetooth not available or not authorized
+      print("Autorizza il bluethooth");
     }
 
   }
   func stop() {
-      peripheralManager.stopAdvertising()
+    peripheralManager.stopAdvertising()
+
   }
 }
