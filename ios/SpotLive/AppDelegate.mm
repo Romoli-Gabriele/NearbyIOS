@@ -3,13 +3,13 @@
 #import <React/RCTBundleURLProvider.h>
 #import "React/RCTBridgeModule.h"
 #import "React/RCTEventEmitter.h"
-#import "SpotMe-Bridging-Header.h"
+#import "SpotLive-Bridging-Header.h"
 #import <Foundation/Foundation.h>
 
 @implementation AppDelegate
 - (BOOL)application:(UIApplication *)application didFinishLaunchingWithOptions:(NSDictionary *)launchOptions
 {
-  self.moduleName = @"SpotMe";
+  self.moduleName = @"SpotLive";
   // You can add your custom initial props in the dictionary below.
   // They will be passed down to the ViewController used by React Native.
   self.initialProps = @{};

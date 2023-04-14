@@ -26,15 +26,13 @@ class NearbyMessages: RCTEventEmitter {
   func start(){
     bleManager?.start()
     advertiser = Advertiser(code: "gcyguiisdfgh")
-    sendEvent(withName: "onActivityStart", body: nil)
   }
   
   @objc
   func stop(){
     advertiser = Advertiser(code: "")
     bleManager?.stop()
-    advertiser?.stop()
-    sendEvent(withName: "onActivityStop", body: nil)
+    //advertiser?.stop()
   }
 }
 
@@ -75,32 +73,63 @@ class BLEManager: NSObject, CBCentralManagerDelegate {
 
 
 class Advertiser: NSObject, CBPeripheralManagerDelegate {
-  private var peripheralManager: CBPeripheralManager!
-  private let serviceUUID = CBUUID(string: "169454ee-d633-11ed-afa1-0242ac120002")
-  private let characteristicUUID = CBUUID(string: "169454ee-d633-11ed-afa1-0242ac120002")
-  private var identifier: String = "SPOTLIVE:" // Aggiungi l'identifier qui
-  
-  init(code: String) {
-    super.init()
-    identifier.append(code);
-    peripheralManager = CBPeripheralManager(delegate: self, queue: nil)
-  }
-  
-  func peripheralManagerDidUpdateState(_ peripheral: CBPeripheralManager) {
-    if peripheral.state == .poweredOn {
-      let characteristic = CBMutableCharacteristic(type: characteristicUUID, properties: .read, value: nil, permissions: .readable)
-      let service = CBMutableService(type: serviceUUID, primary: true)
-      service.characteristics = [characteristic]
-      peripheral.add(service)
-      peripheral.startAdvertising([CBAdvertisementDataServiceUUIDsKey: [serviceUUID], CBAdvertisementDataLocalNameKey: identifier])
-      print(identifier);
-    } else {
-      print("Autorizza il bluethooth");
+    private var peripheralManager: CBPeripheralManager!
+    private let serviceUUID = CBUUID(string: "169454ee-d633-11ed-afa1-0242ac120002")
+    private let characteristicUUID = CBUUID(string: "169454ee-d633-11ed-afa1-0242ac120002")
+    private var identifier: String = "SPOTLIVE:" // Aggiungi l'identifier qui
+    
+    init(code: String) {
+        super.init()
+        identifier.append(code)
+        // Crea una coda di operazioni per eseguire le operazioni Bluetooth in background
+        let options = [CBCentralManagerOptionShowPowerAlertKey: false,
+                    CBCentralManagerOptionRestoreIdentifierKey: "com.spotlive.app.bluetooth"] as [String : Any]
+        peripheralManager = CBPeripheralManager(delegate: self, queue: nil, options: options)
     }
-
+    
+    func peripheralManagerDidUpdateState(_ peripheral: CBPeripheralManager) {
+      print(peripheralManager.isAdvertising)
+      peripheral.removeAllServices()
+        switch peripheral.state {
+        case .poweredOn:
+          print(peripheralManager.isAdvertising)
+          if(!peripheralManager.isAdvertising){
+            let characteristic = CBMutableCharacteristic(type: characteristicUUID, properties: .read, value: nil, permissions: .readable)
+            let service = CBMutableService(type: serviceUUID, primary: true)
+            service.characteristics = [characteristic]
+            peripheral.add(service)
+            
+              peripheral.startAdvertising([CBAdvertisementDataServiceUUIDsKey: [self.serviceUUID], CBAdvertisementDataLocalNameKey: self.identifier])
+            
+            print(identifier)
+          }
+        case .poweredOff:
+            print("Bluetooth spento")
+        case .unsupported:
+            print("Bluetooth non supportato")
+        case .unauthorized:
+            print("Autorizza il Bluetooth")
+        default:
+            break
+        }
+    }
+    
+    func stop() {
+       // peripheralManager.stopAdvertising()
+    }
+  
+  func peripheralManager(_ peripheral: CBPeripheralManager, willRestoreState dict: [String : Any]) {
+    // Ripristina lo stato del servizio e delle caratteristiche
+    /*if let services = dict[CBPeripheralManagerRestoredStateServicesKey] as? [CBMutableService] {
+     for service in services {
+     peripheral.add(service)
+     }
+     }*/
+    
+    // Ripristina l'annuncio
+    /*if let advertisementData = dict[CBPeripheralManagerRestoredStateAdvertisementDataKey] as? [String: Any] {
+     peripheral.startAdvertising(advertisementData)
+     }*/
   }
-  func stop() {
-    peripheralManager.stopAdvertising()
 
-  }
 }

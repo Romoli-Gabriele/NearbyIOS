@@ -15,9 +15,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-               BuildableName = "SpotMe.app"
-               BlueprintName = "SpotMe"
-               ReferencedContainer = "container:SpotMe.xcodeproj">
+               BuildableName = "SpotLive.app"
+               BlueprintName = "SpotLive"
+               ReferencedContainer = "container:SpotLive.xcodeproj">
             </BuildableReference>
          </BuildActionEntry>
       </BuildActionEntries>
@@ -33,9 +33,9 @@
             <BuildableReference
                BuildableIdentifier = "primary"
                BlueprintIdentifier = "00E356ED1AD99517003FC87E"
-               BuildableName = "SpotMeTests.xctest"
-               BlueprintName = "SpotMeTests"
-               ReferencedContainer = "container:SpotMe.xcodeproj">
+               BuildableName = "SpotLiveTests.xctest"
+               BlueprintName = "SpotLiveTests"
+               ReferencedContainer = "container:SpotLive.xcodeproj">
             </BuildableReference>
          </TestableReference>
       </Testables>
@@ -55,9 +55,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-            BuildableName = "SpotMe.app"
-            BlueprintName = "SpotMe"
-            ReferencedContainer = "container:SpotMe.xcodeproj">
+            BuildableName = "SpotLive.app"
+            BlueprintName = "SpotLive"
+            ReferencedContainer = "container:SpotLive.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </LaunchAction>
@@ -72,9 +72,9 @@
          <BuildableReference
             BuildableIdentifier = "primary"
             BlueprintIdentifier = "13B07F861A680F5B00A75B9A"
-            BuildableName = "SpotMe.app"
-            BlueprintName = "SpotMe"
-            ReferencedContainer = "container:SpotMe.xcodeproj">
+            BuildableName = "SpotLive.app"
+            BlueprintName = "SpotLive"
+            ReferencedContainer = "container:SpotLive.xcodeproj">
          </BuildableReference>
       </BuildableProductRunnable>
    </ProfileAction>

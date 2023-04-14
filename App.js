@@ -9,10 +9,6 @@ const App = () => {
   const [devices, setDevices] = useState([]);
   const [isRunning, setIsRunning] = useState(false);
 
-  useEffect(() => {
-    Nearby.isActive().then(res => setIsRunning(res));
-  }, []);
-
   useEffect(() =>{
     getDeviceName().then(setDeviceName);
     // Eventi:
@@ -20,19 +16,14 @@ const App = () => {
       // MESSAGE FOUND
       event => {
         console.log(event)
-        if(event.contains("SPOTLIVE:")){
+          if(event.includes("SPOTLIVE:")){
           event = event.replace("SPOTLIVE:","");
           if(!devices.includes(event) && event != ""){
             //mettere chiamata per vedere se esiste ancora il dispositivo o se è stato fermato
             setDevices(d => [...d, event]);
-          }
+         }
         }
       },
-      // MESSAGE LOST
-      // ACTIVITY START
-      () => setIsRunning(true),
-      // ACTIVITY STOP
-      () => setIsRunning(false),
     );
 
     return () => removeEvents();

@@ -1,7 +1,6 @@
 import {
   NativeModules,
   Platform,
-  PermissionsAndroid,
   NativeEventEmitter,
 } from 'react-native';
 
@@ -15,7 +14,7 @@ const isIos = Platform.OS == "ios";
  */
 const start = () => {
   if (isAndroid) {
-    NativeModules.MyNativeModule.start();
+    NativeModules.MyNativeModule.start("Hello World");
   } else if (isIos) {
     NativeModules.GoogleNearbyMessages.start();
   }
@@ -31,32 +30,14 @@ const stop = () => {
   }
 };
 
-/**
- * Verifica se il servizizio di pubblicazione/scanning è attivo
- * @returns Restituisce una promessa
- */
-const isActive = () => {
-  return new Promise((resolve, reject) => {
-    if (isAndroid) {
-      NativeModules.MyNativeModule.isActivityRunning(res => {
-        resolve(res);
-      });
-    } else {
-      resolve(false);
-    }
-  });
-};
-
 const registerToEvents = (
   onMessageFound,
-  onActivityStart,
-  onActivityStop,
 ) => {
   const emitters = [];
 
   let eventEmitter;
   if (isAndroid) {
-    eventEmitter = new NativeEventEmitter()
+    eventEmitter = new NativeEventEmitter(MyNativeModule)
     emitters.push(
       eventEmitter.addListener('onMessageFound', onMessageFound),
     );
@@ -64,10 +45,6 @@ const registerToEvents = (
     eventEmitter = new NativeEventEmitter(NativeModules.GoogleNearbyMessages)
     emitters.push(
       eventEmitter.addListener('deviceFound', onMessageFound),
-    );
-    emitters.push(
-      eventEmitter.addListener('onActivityStart', onActivityStart),
-      eventEmitter.addListener('onActivityStop', onActivityStop),
     );
   }
 
@@ -80,6 +57,5 @@ const registerToEvents = (
 export default {
   start,
   stop,
-  isActive,
   registerToEvents,
 };

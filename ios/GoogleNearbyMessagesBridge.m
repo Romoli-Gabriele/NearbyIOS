@@ -1,5 +1,5 @@
 // GoogleNearbyMessagesBridge.m
-// SpotMe
+// SpotLive
 //
 // Created by Gabriele Romoli on 13/03/23.
 //

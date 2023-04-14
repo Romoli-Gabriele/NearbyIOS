@@ -21,7 +21,7 @@ if linkage != nil
   use_frameworks! :linkage => linkage.to_sym
 end
 
-target 'SpotMe' do
+target 'SpotLive' do
   config = use_native_modules!
 
   # Flags change depending on the env values.
@@ -42,7 +42,7 @@ target 'SpotMe' do
     :app_path => "#{Pod::Config.instance.installation_root}/.."
   )
 
-  target 'SpotMeTests' do
+  target 'SpotLiveTests' do
     inherit! :complete
     # Pods for testing
   end
