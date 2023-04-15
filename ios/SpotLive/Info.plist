@@ -2,6 +2,10 @@
 <!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
 <plist version="1.0">
 <dict>
+	<key>NSLocationWhenInUseUsageDescription</key>
+	<string>Use to see when i&apos;m nerar to other people</string>
+	<key>NSLocationAlwaysAndWhenInUseUsageDescription</key>
+	<string>Use to see when I&apos;m near other people</string>
 	<key>BGTaskSchedulerPermittedIdentifiers</key>
 	<array>
 		<string>Task1</string>
@@ -56,9 +60,7 @@
 	<key>NSLocalNetworkUsageDescription</key>
 	<string>Usesit to connect and interact with other devices.</string>
 	<key>NSLocationAlwaysUsageDescription</key>
-	<string>to work in background</string>
-	<key>NSLocationUsageDescription</key>
-	<string>TEst</string>
+	<string>Per continuare la task in background</string>
 	<key>NSMicrophoneUsageDescription</key>
 	<string>We need audio to use ultra frequency</string>
 	<key>UIApplicationSceneManifest</key>
@@ -71,9 +73,11 @@
 	<key>UIBackgroundModes</key>
 	<array>
 		<string>bluetooth-central</string>
+		<string>location</string>
 		<string>bluetooth-peripheral</string>
 		<string>nearby-interaction</string>
 		<string>processing</string>
+		<string>remote-notification</string>
 	</array>
 	<key>UILaunchStoryboardName</key>
 	<string>LaunchScreen</string>
