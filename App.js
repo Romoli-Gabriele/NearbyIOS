@@ -21,12 +21,12 @@ const App = () => {
         appState.current.match(/inactive|background/) &&
         nextAppState === 'active'
       ) {
-        Nearby.stopBackground("deviceName");
+        //Nearby.stopBackground("deviceName");
       }else if(
         appState.current.match(/inactive|active/) &&
         nextAppState === 'background'
       ){
-        Nearby.background("deviceName");
+        //Nearby.background("deviceName");
       }
 
       appState.current = nextAppState;

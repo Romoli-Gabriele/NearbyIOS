@@ -9,14 +9,13 @@ import Foundation
 import CoreBluetooth
 import BackgroundTasks
 import UserNotifications
+import CoreLocation
 
 let defaultDiscoveryModes: GNSDiscoveryMode = [.broadcast, .scan]
 let defaultDiscoveryMediums: GNSDiscoveryMediums = .BLE
-var backgroundTaskIdentifier: UIBackgroundTaskIdentifier = .invalid
-var thread: Thread? = nil;
 
 @objc(NearbyMessages)
-class NearbyMessages: RCTEventEmitter {
+class NearbyMessages: RCTEventEmitter, CLLocationManagerDelegate{
   enum EventType: String, CaseIterable {
     case MESSAGE_FOUND
     case MESSAGE_LOST
@@ -40,7 +39,7 @@ class NearbyMessages: RCTEventEmitter {
     }
   }
   
-  
+  private var active = true
   private var messageManager: GNSMessageManager? = nil
   private var currentPublication: GNSPublication? = nil
   private var currentSubscription: GNSSubscription? = nil
@@ -50,9 +49,23 @@ class NearbyMessages: RCTEventEmitter {
   private var tempBluetoothManager: CBCentralManager? = nil
   private var tempBluetoothManagerDelegate: CBCentralManagerDelegate? = nil
   private var didCallback = false
-  private var shouldStop = true;
-  private var messages = 0;
-  private let maxMessages = 400;
+  private var _locationManager: CLLocationManager?
+  private var backgroundTask: UIBackgroundTaskIdentifier = UIBackgroundTaskIdentifier.invalid
+  private var threadStarted = false
+  private var threadShouldExit = false
+  public var locationManager: CLLocationManager {
+    get {
+      if let l = _locationManager {
+        return l
+      }
+      else {
+        let l = CLLocationManager()
+        l.delegate = self
+        _locationManager = l
+        return l
+      }
+    }
+  }
   
   @objc(connect:discoveryModes:discoveryMediums:resolver:rejecter:)
   func connect(_ apiKey: String, discoveryModes: Array<NSString>, discoveryMediums: Array<NSString>, resolver resolve: RCTPromiseResolveBlock, rejecter reject: RCTPromiseRejectBlock) -> Void {
@@ -64,6 +77,7 @@ class NearbyMessages: RCTEventEmitter {
         print("Accettate notifiche: \(granted)")
       }
     }
+    locationManager.requestAlwaysAuthorization()
     print("GNM_BLE: Connecting...")
     GNSMessageManager.setDebugLoggingEnabled(true)
     GNSMessageManager.setDebugLoggingEnabled(true)
@@ -95,7 +109,6 @@ class NearbyMessages: RCTEventEmitter {
   func disconnect() -> Void {
     print("GNM_BLE: Disconnecting...");
     // TODO: is setting nil enough garbage collection? no need for CFRetain, CFRelease, or CFAutorelease?
-    self.shouldStop = true;
     self.currentSubscription = nil
     self.currentPublication = nil
     self.messageManager = nil
@@ -260,27 +273,6 @@ class NearbyMessages: RCTEventEmitter {
     disconnect()
   }
   
-@objc
-func backgroundHandler(_ message: String){
-  self.currentSubscription = nil;
-  if(self.messageManager != nil){
-    self.stopBackground();
-    self.messages = 0;
-    sleep(4);
-    thread = Thread{
-      self.task1(message: message);
-    }
-    thread?.start();
-  }
-  }
-@objc
-  func stopBackground(){
-    print("Ferma back -->")
-      self.shouldStop = true;
-      UIApplication.shared.endBackgroundTask(backgroundTaskIdentifier);
-      backgroundTaskIdentifier = .invalid;
-  }
-  
   func parseDiscoveryMediums(_ discoveryMediums: Array<NSString>) -> GNSDiscoveryMediums {
     var mediums = GNSDiscoveryMediums()
     for medium in discoveryMediums {
@@ -339,43 +331,26 @@ func backgroundHandler(_ message: String){
     }
   }
   
-  func task1(message: String){
-    backgroundTaskIdentifier = UIApplication.shared.beginBackgroundTask(withName: "Task1", expirationHandler: {
-      self.shouldStop = true;
-      sleep(4);
-      UIApplication.shared.endBackgroundTask(backgroundTaskIdentifier);
-      backgroundTaskIdentifier = .invalid
-      print("Task 1 terminato dal sistema");
-      self.SendNotification(message: "Potresti non essere più visibile agli altri utenti");
-    })
-    self.shouldStop = false;
-    self.messages = 0;
-      while !self.shouldStop &&  self.messages < self.maxMessages {
-        if(self.messages%25 == 0){
-          self.publish(message) { (result: Any?) in
-            self.SendNotification(message: "Inviato correttamente");
-          } rejecter: { (errorCode: String?, errorMessage: String?, error: Error?) in
-            print(errorMessage ?? "Errore");
-            self.SendNotification(message: "Errore invio");
-          }
-        }
-        self.messages += 1;
-        print("Task 1 message: ", self.messages);
-        sleep(3);
-      }
-    UIApplication.shared.endBackgroundTask(backgroundTaskIdentifier)
-   if(self.messages >= self.maxMessages){
-     self.SendNotification(message: "Non sei più visibile agli altri utenti");
-     self.sendEvent(withName: EventType.onActivityStop.rawValue, body: [ "Stop" ]);
-     self.stop();
-   }
-    print("Fermata");
-    backgroundTaskIdentifier = .invalid
+  @objc
+  func stop(){
+    print("STOP");
+    self.unsubscribe()
+    self.disconnect()
   }
   
   @objc
   func start(_ message: String){
     print("START");
+    
+    DispatchQueue.main.async {
+      NotificationCenter.default.addObserver(forName: UIApplication.didBecomeActiveNotification, object: nil, queue: .main) { _ in
+        self.active = true
+      }
+      NotificationCenter.default.addObserver(forName: UIApplication.didEnterBackgroundNotification, object: nil, queue: .main) { _ in
+        self.active = false
+      }
+    }
+    
     self.subscribe(){ (result: Any?) in
       DispatchQueue.main.async {
         self.publish(message){(result: Any?) in
@@ -384,20 +359,98 @@ func backgroundHandler(_ message: String){
           print(errorMessage ?? "Errore");
         };
       }
-      thread = Thread{
-        self.task1(message: message);
+      
+      locationManager.pausesLocationUpdatesAutomatically = false
+      locationManager.desiredAccuracy = kCLLocationAccuracyThreeKilometers
+      locationManager.distanceFilter = 3000.0
+      locationManager.showsBackgroundLocationIndicator = true;
+      if #available(iOS 9.0, *) {
+        locationManager.allowsBackgroundLocationUpdates = true
+      } else {
+        // not needed on earlier versions
       }
-      thread?.start();
+      // start updating location at beginning just to give us unlimited background running time
+      self.locationManager.startUpdatingLocation()
+      
+      periodicallySendScreenOnNotifications(message:message)
+      extendBackgroundRunningTime()
     } rejecter: { (errorCode: String?, errorMessage: String?, error: Error?) in
       print(errorMessage ?? "Errore");
     };
+    
+    self.sendEvent(withName: "onActivityStart", body: "partito");
   }
   
-  @objc
-  func stop(){
-    print("STOP");
-    self.shouldStop = true;
-    self.unsubscribe()
-    self.disconnect()
+  private func extendBackgroundRunningTime() {
+    if (threadStarted) {
+      // if we are in here, that means the background task is already running.
+      // don't restart it.
+      return
+    }
+    threadStarted = true
+    NSLog("Attempting to extend background running time")
+    
+    self.backgroundTask = UIApplication.shared.beginBackgroundTask(withName: "Task1", expirationHandler: {
+      NSLog("Background task expired by iOS.")
+      UIApplication.shared.endBackgroundTask(self.backgroundTask)
+    })
+
+  
+    var lastLogTime = 0.0
+    DispatchQueue.global().async {
+      let startedTime = Int(Date().timeIntervalSince1970) % 10000000
+      NSLog("*** STARTED BACKGROUND THREAD")
+      while(!self.threadShouldExit) {
+          DispatchQueue.main.async {
+              let now = Date().timeIntervalSince1970
+              let backgroundTimeRemaining = UIApplication.shared.backgroundTimeRemaining
+              if abs(now - lastLogTime) >= 2.0 {
+                  lastLogTime = now
+                  if backgroundTimeRemaining < 10.0 {
+                    NSLog("About to suspend based on background thread running out.")
+                  }
+                  if (backgroundTimeRemaining < 200000.0) {
+                   NSLog("Thread \(startedTime) background time remaining: \(backgroundTimeRemaining)")
+                  }
+                  else {
+                    //NSLog("Thread \(startedTime) background time remaining: INFINITE")
+                  }
+              }
+          }
+          sleep(1)
+      }
+      self.threadStarted = false
+      NSLog("*** EXITING BACKGROUND THREAD")
+    }
+
   }
+  
+  private func periodicallySendScreenOnNotifications(message: String) {
+        DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()+30.0) {
+          self.publish(message) { (result: Any?) in
+            self.SendNotification(message: "Inviato correttamente");
+          } rejecter: { (errorCode: String?, errorMessage: String?, error: Error?) in
+            print(errorMessage ?? "Errore");
+            self.SendNotification(message: "Errore invio");
+          }
+          self.periodicallySendScreenOnNotifications(message: message)
+        }
+    }
+  
+  private func sendNotification(message: String) {
+        DispatchQueue.main.async {
+            let center = UNUserNotificationCenter.current()
+            center.removeAllDeliveredNotifications()
+            let content = UNMutableNotificationContent()
+            content.title = "SpotLive"
+            content.body = message
+            content.categoryIdentifier = "low-priority"
+            //let soundName = UNNotificationSoundName("silence.mp3")
+            //content.sound = UNNotificationSound(named: soundName)
+            let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
+            center.add(request)
+        }
+    }
+  
+  
 }

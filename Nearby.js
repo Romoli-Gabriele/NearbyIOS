@@ -137,26 +137,10 @@ const registerToEvents = (
   };
 }
 
-const background = message => {
-  if (isIos) {
-    NativeModules.GoogleNearbyMessages.unsubscribe();
-    NativeModules.GoogleNearbyMessages.backgroundHandler(message);
-  }
-}
-
-const stopBackground = (message) => {
-  if(isIos){
-    NativeModules.GoogleNearbyMessages.stopBackground();
-    NativeModules.GoogleNearbyMessages.start(message);
-  }
-}
-
 export default {
   init,
   start,
   stop,
   isActive,
   registerToEvents,
-  background,
-  stopBackground,
 };
