@@ -334,8 +334,13 @@ class NearbyMessages: RCTEventEmitter, CLLocationManagerDelegate{
   @objc
   func stop(){
     print("STOP");
+    self.locationManager.stopUpdatingLocation();
+    self.threadShouldExit = true
+    self.active = false
+    UIApplication.shared.endBackgroundTask(self.backgroundTask)
     self.unsubscribe()
     self.disconnect()
+    self.sendEvent(withName: "onActivityStop", body: "fermato")
   }
   
   @objc
