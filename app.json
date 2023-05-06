@@ -1,4 +1,10 @@
 {
   "name": "SpotMe",
-  "displayName": "SpotMe"
+  "displayName": "SpotMe",
+  "extra": {
+    "eas": {
+      "projectId": "dd960954-5f12-4654-8d6c-a8dd01ec8e3e"
+    }
+  },
+  "owner": "niccolocase"
 }

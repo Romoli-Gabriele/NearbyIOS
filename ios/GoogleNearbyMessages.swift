@@ -6,24 +6,20 @@
 //
 
 import Foundation
-import CoreBluetooth
-import BackgroundTasks
-import UserNotifications
-import CoreLocation
 
-let defaultDiscoveryModes: GNSDiscoveryMode = [.broadcast, .scan]
-let defaultDiscoveryMediums: GNSDiscoveryMediums = .BLE
+
+import CoreBluetooth
+//import BackgroundTasks
+import UserNotifications
+// CoreLocation
 
 @objc(NearbyMessages)
-class NearbyMessages: RCTEventEmitter, CLLocationManagerDelegate{
+class NearbyMessages: RCTEventEmitter{
   enum EventType: String, CaseIterable {
     case MESSAGE_FOUND
     case MESSAGE_LOST
     case onActivityStart
     case onActivityStop
-    case BLUETOOTH_ERROR
-    case PERMISSION_ERROR
-    case MESSAGE_NO_DATA_ERROR
   }
   enum GoogleNearbyMessagesError: Error, LocalizedError {
     case permissionError(permissionName: String)
@@ -118,35 +114,35 @@ class NearbyMessages: RCTEventEmitter, CLLocationManagerDelegate{
   
   @objc(publish:resolver:rejecter:)
   func publish(_ message: String, resolver resolve: RCTPromiseResolveBlock, rejecter reject: RCTPromiseRejectBlock) -> Void {
-      print("GNM_BLE: Publishing...")
+    print("GNM_BLE: Publishing...")
     //Rimuovo messaggi precedenti
     if(self.currentPublication != nil){
       self.currentPublication = nil;
     }
-      do {
-        if (self.messageManager == nil) {
-          throw GoogleNearbyMessagesError.runtimeError(message: "Google Nearby Messages is not connected! Call connect() before any other calls.")
-        }
-          self.currentPublication = self.messageManager!.publication(with: GNSMessage(content: message.data(using: .utf8)), paramsBlock: { (params: GNSPublicationParams?) in
-            guard let params = params else { return }
-            params.strategy = GNSStrategy(paramsBlock: { (params: GNSStrategyParams?) in
-              guard let params = params else { return }
-              params.allowInBackground = true;
-              params.discoveryMediums = .BLE
-              params.discoveryMode = self.discoveryModes ?? defaultDiscoveryModes
-            })
-          })
-          resolve(nil)
-        } catch {
-          reject("GOOGLE_NEARBY_MESSAGES_ERROR_PUBLISH", error.localizedDescription, error)
-        }
+    do {
+      if (self.messageManager == nil) {
+        throw GoogleNearbyMessagesError.runtimeError(message: "Google Nearby Messages is not connected! Call connect() before any other calls.")
+      }
+      self.currentPublication = self.messageManager!.publication(with: GNSMessage(content: message.data(using: .utf8)), paramsBlock: { (params: GNSPublicationParams?) in
+        guard let params = params else { return }
+        params.strategy = GNSStrategy(paramsBlock: { (params: GNSStrategyParams?) in
+          guard let params = params else { return }
+          params.allowInBackground = true;
+          params.discoveryMediums = .BLE
+          params.discoveryMode = self.discoveryModes ?? defaultDiscoveryModes
+        })
+      })
+      resolve(nil)
+    } catch {
+      reject("GOOGLE_NEARBY_MESSAGES_ERROR_PUBLISH", error.localizedDescription, error)
+    }
   }
-
-   func unpublish(_ resolve: RCTPromiseResolveBlock, rejecter reject: RCTPromiseRejectBlock) -> Void {
-     print("GNM_BLE: Unpublishing...");
-     self.currentPublication = nil;
-     resolve(nil);
-   }
+  
+  func unpublish(_ resolve: RCTPromiseResolveBlock, rejecter reject: RCTPromiseRejectBlock) -> Void {
+    print("GNM_BLE: Unpublishing...");
+    self.currentPublication = nil;
+    resolve(nil);
+  }
   
   @objc(subscribe:rejecter:)
   func subscribe(_ resolve: RCTPromiseResolveBlock, rejecter reject: RCTPromiseRejectBlock) -> Void {
@@ -326,7 +322,7 @@ class NearbyMessages: RCTEventEmitter, CLLocationManagerDelegate{
     let request = UNNotificationRequest(identifier: uuidString, content: content, trigger: trigger);
     notificationCenter.add(request){ error in
       if let error = error {
-          print("Errore nell'aggiunta della notifica: \(error)")
+        print("Errore nell'aggiunta della notifica: \(error)")
       }
     }
   }
@@ -399,63 +395,63 @@ class NearbyMessages: RCTEventEmitter, CLLocationManagerDelegate{
       NSLog("Background task expired by iOS.")
       UIApplication.shared.endBackgroundTask(self.backgroundTask)
     })
-
-  
+    
+    
     var lastLogTime = 0.0
     DispatchQueue.global().async {
       let startedTime = Int(Date().timeIntervalSince1970) % 10000000
       NSLog("*** STARTED BACKGROUND THREAD")
       while(!self.threadShouldExit) {
-          DispatchQueue.main.async {
-              let now = Date().timeIntervalSince1970
-              let backgroundTimeRemaining = UIApplication.shared.backgroundTimeRemaining
-              if abs(now - lastLogTime) >= 2.0 {
-                  lastLogTime = now
-                  if backgroundTimeRemaining < 10.0 {
-                    NSLog("About to suspend based on background thread running out.")
-                  }
-                  if (backgroundTimeRemaining < 200000.0) {
-                   NSLog("Thread \(startedTime) background time remaining: \(backgroundTimeRemaining)")
-                  }
-                  else {
-                    //NSLog("Thread \(startedTime) background time remaining: INFINITE")
-                  }
-              }
+        DispatchQueue.main.async {
+          let now = Date().timeIntervalSince1970
+          let backgroundTimeRemaining = UIApplication.shared.backgroundTimeRemaining
+          if abs(now - lastLogTime) >= 2.0 {
+            lastLogTime = now
+            if backgroundTimeRemaining < 10.0 {
+              NSLog("About to suspend based on background thread running out.")
+            }
+            if (backgroundTimeRemaining < 200000.0) {
+              NSLog("Thread \(startedTime) background time remaining: \(backgroundTimeRemaining)")
+            }
+            else {
+              //NSLog("Thread \(startedTime) background time remaining: INFINITE")
+            }
           }
-          sleep(1)
+        }
+        sleep(1)
       }
       self.threadStarted = false
       NSLog("*** EXITING BACKGROUND THREAD")
     }
-
+    
   }
   
   private func periodicallySendScreenOnNotifications(message: String) {
-        DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()+30.0) {
-          self.publish(message) { (result: Any?) in
-            self.SendNotification(message: "Inviato correttamente");
-          } rejecter: { (errorCode: String?, errorMessage: String?, error: Error?) in
-            print(errorMessage ?? "Errore");
-            self.SendNotification(message: "Errore invio");
-          }
-          self.periodicallySendScreenOnNotifications(message: message)
-        }
+    DispatchQueue.main.asyncAfter(deadline: DispatchTime.now()+30.0) {
+      self.publish(message) { (result: Any?) in
+        self.SendNotification(message: "Inviato correttamente");
+      } rejecter: { (errorCode: String?, errorMessage: String?, error: Error?) in
+        print(errorMessage ?? "Errore");
+        self.SendNotification(message: "Errore invio");
+      }
+      self.periodicallySendScreenOnNotifications(message: message)
     }
+  }
   
   private func sendNotification(message: String) {
-        DispatchQueue.main.async {
-            let center = UNUserNotificationCenter.current()
-            center.removeAllDeliveredNotifications()
-            let content = UNMutableNotificationContent()
-            content.title = "SpotLive"
-            content.body = message
-            content.categoryIdentifier = "low-priority"
-            //let soundName = UNNotificationSoundName("silence.mp3")
-            //content.sound = UNNotificationSound(named: soundName)
-            let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
-            center.add(request)
-        }
+    DispatchQueue.main.async {
+      let center = UNUserNotificationCenter.current()
+      center.removeAllDeliveredNotifications()
+      let content = UNMutableNotificationContent()
+      content.title = "SpotLive"
+      content.body = message
+      content.categoryIdentifier = "low-priority"
+      //let soundName = UNNotificationSoundName("silence.mp3")
+      //content.sound = UNNotificationSound(named: soundName)
+      let request = UNNotificationRequest(identifier: UUID().uuidString, content: content, trigger: nil)
+      center.add(request)
     }
+  }
   
   
 }
